@@ -51,6 +51,13 @@
 #include "xhtml_node.hpp"
 #include "xhtml_render_ctx.hpp"
 
+#include "engine.hpp"
+#include "action_process.hpp"
+#include "ai_process.hpp"
+#include "collision_process.hpp"
+#include "input_process.hpp"
+#include "random.hpp"
+
 #if defined(_MSC_VER)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -186,6 +193,47 @@ void read_system_fonts(sys::file_path_map* res)
 #endif
 }
 
+void generate_map(engine& eng)
+{
+	const int map_width = 100;
+	const int map_height = 50;
+
+	const int min_room_size = 3;
+	const int max_room_size = 20;
+	
+	const int num_rooms = 150;
+
+	std::vector<rect> rooms;
+	for(int n = 0; n != num_rooms; ++n) {
+		int x = generator::get_uniform_int<int>(max_room_size, map_width-max_room_size);
+		int y = generator::get_uniform_int<int>(max_room_size, map_height-max_room_size);
+		int w = generator::get_uniform_int<int>(min_room_size, max_room_size);
+		int h = generator::get_uniform_int<int>(min_room_size, max_room_size);
+
+		rooms.emplace_back(rect(x, y, w, h));
+	}
+
+	std::vector<std::string> output;
+	output.resize(map_height);
+	for(auto& op : output) {
+		op.resize(map_width, ' ');
+	}
+	for(auto& room : rooms) {
+		for(int x = room.x1(); x != room.x2(); ++x) {
+			output[room.y1()][x] = '#';
+			output[room.y2()][x] = '#';
+		}
+		for(int y = room.y1()+1; y != room.y2()-1; ++y) {
+			output[y][room.x1()] = '#';
+			output[y][room.x2()] = '#';
+		}
+	}
+
+	for(auto& line : output) {
+		std::cout << line << "\n";
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	std::vector<std::string> args;
@@ -250,10 +298,21 @@ int main(int argc, char* argv[])
 
 	auto canvas = Canvas::getInstance();
 
+	std::unique_ptr<engine> eng(new engine(main_wnd));
+
+	eng->add_process(std::make_shared<process::input>());
+	eng->add_process(std::make_shared<process::ai>());
+	eng->add_process(std::make_shared<process::action>());
+	// N.B. entity/map collision needs to come before entity/entity collision
+	eng->add_process(std::make_shared<process::em_collision>());
+	eng->add_process(std::make_shared<process::ee_collision>());
+
+	generate_map(*eng);
+
 	SDL_Event e;
-	bool done = false;
+	bool running = true;
 	Uint32 last_tick_time = SDL_GetTicks();
-	while(!done) {
+	while(running) {
 		/*while(SDL_PollEvent(&e)) {
 			// XXX we need to add some keyboard/mouse callback handling here for "doc".
 			if(e.type == SDL_KEYUP && e.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
@@ -302,6 +361,7 @@ int main(int argc, char* argv[])
 			style_tree->process(dt);
 		}
 		scene->process(dt);
+		running = eng->update(dt);
 		last_tick_time = current_tick_time;
 
 		//scene->renderScene(rman);

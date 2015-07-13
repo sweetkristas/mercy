@@ -112,6 +112,7 @@
     <ClInclude Include="..\src\profile_timer.hpp" />
     <ClInclude Include="..\src\quadtree.hpp" />
     <ClInclude Include="..\src\random.hpp" />
+    <ClInclude Include="..\src\randutils.hpp" />
     <ClInclude Include="..\src\svg\easy_svg.hpp" />
     <ClInclude Include="..\src\svg\svg_attribs.hpp" />
     <ClInclude Include="..\src\svg\svg_container.hpp" />
