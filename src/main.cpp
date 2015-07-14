@@ -30,6 +30,7 @@
 #include "CameraObject.hpp"
 #include "Canvas.hpp"
 #include "Font.hpp"
+#include "FontDriver.hpp"
 #include "RenderManager.hpp"
 #include "RenderTarget.hpp"
 #include "SceneGraph.hpp"
@@ -56,6 +57,7 @@
 #include "ai_process.hpp"
 #include "collision_process.hpp"
 #include "input_process.hpp"
+#include "map.hpp"
 #include "random.hpp"
 
 #if defined(_MSC_VER)
@@ -193,46 +195,6 @@ void read_system_fonts(sys::file_path_map* res)
 #endif
 }
 
-void generate_map(engine& eng)
-{
-	const int map_width = 100;
-	const int map_height = 50;
-
-	const int min_room_size = 3;
-	const int max_room_size = 20;
-	
-	const int num_rooms = 150;
-
-	std::vector<rect> rooms;
-	for(int n = 0; n != num_rooms; ++n) {
-		int x = generator::get_uniform_int<int>(max_room_size, map_width-max_room_size);
-		int y = generator::get_uniform_int<int>(max_room_size, map_height-max_room_size);
-		int w = generator::get_uniform_int<int>(min_room_size, max_room_size);
-		int h = generator::get_uniform_int<int>(min_room_size, max_room_size);
-
-		rooms.emplace_back(rect(x, y, w, h));
-	}
-
-	std::vector<std::string> output;
-	output.resize(map_height);
-	for(auto& op : output) {
-		op.resize(map_width, ' ');
-	}
-	for(auto& room : rooms) {
-		for(int x = room.x1(); x != room.x2(); ++x) {
-			output[room.y1()][x] = '#';
-			output[room.y2()][x] = '#';
-		}
-		for(int y = room.y1()+1; y != room.y2()-1; ++y) {
-			output[y][room.x1()] = '#';
-			output[y][room.x2()] = '#';
-		}
-	}
-
-	for(auto& line : output) {
-		std::cout << line << "\n";
-	}
-}
 
 int main(int argc, char* argv[])
 {
@@ -259,8 +221,8 @@ int main(int argc, char* argv[])
 	sys::file_path_map font_files;
 	sys::get_unique_files(data_path + "fonts/", font_files);
 	read_system_fonts(&font_files);
-	KRE::FontDriver::setAvailableFonts(font_files);
-	KRE::FontDriver::setFontProvider("stb");
+	FontDriver::setAvailableFonts(font_files);
+	FontDriver::setFontProvider("stb");
 
 	WindowManager wm("SDL");
 
@@ -298,7 +260,7 @@ int main(int argc, char* argv[])
 
 	auto canvas = Canvas::getInstance();
 
-	std::unique_ptr<engine> eng(new engine(main_wnd));
+	std::unique_ptr<engine> eng(new engine(main_wnd, scene));
 
 	eng->add_process(std::make_shared<process::input>());
 	eng->add_process(std::make_shared<process::ai>());
@@ -307,9 +269,13 @@ int main(int argc, char* argv[])
 	eng->add_process(std::make_shared<process::em_collision>());
 	eng->add_process(std::make_shared<process::ee_collision>());
 
-	generate_map(*eng);
+	// XXX this bit of hackery calculates the number of characters to draw maximally draw to fill the screen
+	// based on a font-size of 10. 96.0 is the dpi to use
+	int map_width = static_cast<int>(width / 10.0f * (72.0f/96.0f));
+	int map_height = static_cast<int>(height / 10.0f);
+	eng->set_map(mercy::BaseMap::create("dungeon", map_width, map_height, variant()));
 
-	SDL_Event e;
+	//SDL_Event e;
 	bool running = true;
 	Uint32 last_tick_time = SDL_GetTicks();
 	while(running) {
@@ -364,8 +330,8 @@ int main(int argc, char* argv[])
 		running = eng->update(dt);
 		last_tick_time = current_tick_time;
 
-		//scene->renderScene(rman);
-		//rman->render(main_wnd);
+		scene->renderScene(rman);
+		rman->render(main_wnd);
 
 		if(scene_tree != nullptr) {
 			scene_tree->preRender(main_wnd);
@@ -374,6 +340,5 @@ int main(int argc, char* argv[])
 
 		main_wnd->swap();
 	}
-
 	return 0;
 }

@@ -25,10 +25,12 @@
 
 #include "engine_fwd.hpp"
 #include "geometry.hpp"
+#include "map.hpp"
 #include "process.hpp"
 #include "profile_timer.hpp"
 #include "quadtree.hpp"
 
+#include "SceneFwd.hpp"
 #include "WindowManagerFwd.hpp"
 
 enum class EngineState {
@@ -44,7 +46,7 @@ enum class EngineUserEvents {
 class engine
 {
 public:
-	engine(const KRE::WindowPtr& wm);
+	engine(const KRE::WindowPtr& wnd, const KRE::SceneGraphPtr& sg);
 	~engine();
 	
 	void add_entity(component_set_ptr e);
@@ -52,9 +54,6 @@ public:
 
 	void add_process(process::process_ptr s);
 	void remove_process(process::process_ptr s);
-
-	KRE::WindowPtr& get_window() { return wm_; }
-	const KRE::WindowPtr& get_window() const { return wm_; }
 
 	void set_state(EngineState state) { state_ = state; }
 	EngineState get_state() const { return state_; }
@@ -69,8 +68,7 @@ public:
 
 	entity_list entities_in_area(const rect& r);
 
-	const point& get_tile_size() const { return tile_size_; }
-	void set_tile_size(const point& p) { tile_size_ = p; }
+	void set_map(const mercy::BaseMapPtr& map);
 
 private:
 	void translate_mouse_coords(SDL_Event* evt);
@@ -79,9 +77,10 @@ private:
 	EngineState state_;
 	int turns_;
 	point camera_;
-	KRE::WindowPtr wm_;
+	KRE::WindowPtr wnd_; 
+	KRE::SceneGraphPtr sg_;
 	entity_list entity_list_;
 	quadtree<component_set_ptr> entity_quads_;
 	std::vector<process::process_ptr> process_list_;
-	point tile_size_;
+	mercy::BaseMapPtr map_;
 };

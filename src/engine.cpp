@@ -24,6 +24,8 @@
 #include <algorithm>
 
 #include "CameraObject.hpp"
+#include "SceneGraph.hpp"
+#include "SceneNode.hpp"
 #include "WindowManager.hpp"
 
 #include "asserts.hpp"
@@ -42,10 +44,11 @@ double get_mouse_scale_factor()
 	return mouse_event_scale_factor;
 }
 
-engine::engine(const KRE::WindowPtr& wm)
+engine::engine(const KRE::WindowPtr& wnd, const KRE::SceneGraphPtr& sg)
 	: state_(EngineState::PLAY),
 	  turns_(1),
-	  wm_(wm),
+	  wnd_(wnd),
+	  sg_(sg),
 	  entity_quads_(0, rect(0,0,100,100))
 {
 }
@@ -87,11 +90,11 @@ void engine::translate_mouse_coords(SDL_Event* evt)
 {
 	// transform the absolute mouse co-ordinates to a window-size independent quantity.
 	if(evt->type == SDL_MOUSEMOTION) {
-		evt->motion.x = static_cast<Sint32>((evt->motion.x * mouse_event_scale_factor) / wm_->width());
-		evt->motion.y = static_cast<Sint32>((evt->motion.y * mouse_event_scale_factor) / wm_->height());
+		evt->motion.x = static_cast<Sint32>((evt->motion.x * mouse_event_scale_factor) / wnd_->width());
+		evt->motion.y = static_cast<Sint32>((evt->motion.y * mouse_event_scale_factor) / wnd_->height());
 	} else {
-		evt->button.x = static_cast<Sint32>((evt->button.x * mouse_event_scale_factor) / wm_->width());
-		evt->button.y = static_cast<Sint32>((evt->button.y * mouse_event_scale_factor) / wm_->height());
+		evt->button.x = static_cast<Sint32>((evt->button.x * mouse_event_scale_factor) / wnd_->width());
+		evt->button.y = static_cast<Sint32>((evt->button.y * mouse_event_scale_factor) / wnd_->height());
 	}
 }
 
@@ -117,7 +120,7 @@ void engine::process_events()
 					case SDL_WINDOWEVENT_RESIZED: {
 						int width = evt.window.data1;
 						int height = evt.window.data2;
-						wm_->notifyNewWindowSize(width, height);
+						wnd_->notifyNewWindowSize(width, height);
 						KRE::DisplayDevice::getCurrent()->setDefaultCamera(std::make_shared<KRE::Camera>("ortho1", 0, width, 0, height));
 						break;
 					}
@@ -140,6 +143,10 @@ void engine::process_events()
 						claimed = true;
 					}
 				} else if(evt.key.keysym.scancode == SDL_SCANCODE_T) {
+					// XXX testcode
+					int map_width = static_cast<int>(wnd_->width() / 10.0f * (72.0f/96.0f));
+					int map_height = static_cast<int>(wnd_->height() / 10.0f);
+					set_map(mercy::BaseMap::create("dungeon", map_width, map_height, variant()));
 				}
 				break;
 		}
@@ -164,13 +171,13 @@ void engine::populate_quadtree()
 		| (1 << component::Component::COLLISION);
 	static component_id collision_map_mask = collision_mask | (1 << component::Component::MAP);
 
-	for(auto& e : entity_list_) {
+	/*for(auto& e : entity_list_) {
 		if((e->mask & collision_map_mask) == collision_mask) {
 			auto& pos = e->pos->pos;
 			auto& spr = e->spr;
 			entity_quads_.insert(e, rect(pos.x, pos.y, tile_size_.x, tile_size_.y));
 		}
-	}
+	}*/
 }
 
 entity_list engine::entities_in_area(const rect& r)
@@ -210,4 +217,13 @@ void engine::inc_turns(int cnt)
 	SDL_PushEvent(&user_event);
 
 	turns_ += cnt;
+}
+
+void engine::set_map(const mercy::BaseMapPtr& map) 
+{
+	map_ = map; 
+	if(map_ != nullptr) {
+		sg_->getRootNode()->clear();
+		sg_->getRootNode()->attachObject(map_->createRenderable());
+	}
 }

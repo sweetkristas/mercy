@@ -107,6 +107,7 @@
     <ClInclude Include="..\src\kre\WindowManager.hpp" />
     <ClInclude Include="..\src\kre\WindowManagerFwd.hpp" />
     <ClInclude Include="..\src\lexical_cast.hpp" />
+    <ClInclude Include="..\src\map.hpp" />
     <ClInclude Include="..\src\noiseutils.h" />
     <ClInclude Include="..\src\process.hpp" />
     <ClInclude Include="..\src\profile_timer.hpp" />
@@ -243,6 +244,7 @@
     <ClCompile Include="..\src\kre\VGraphOGLFixed.cpp" />
     <ClCompile Include="..\src\kre\WindowManager.cpp" />
     <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\map.cpp" />
     <ClCompile Include="..\src\noiseutils.cpp" />
     <ClCompile Include="..\src\process.cpp" />
     <ClCompile Include="..\src\random.cpp" />
@@ -332,7 +334,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\external\include\SDL;..\external\include;..\src\xhtml;..\src\svg;..\src\kre;..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
