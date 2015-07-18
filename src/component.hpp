@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "Color.hpp"
+#include "SceneFwd.hpp"
 #include "Texture.hpp"
 #include "geometry.hpp"
 #include "variant.hpp"
@@ -82,7 +83,7 @@ namespace component
 	struct position : public component
 	{
 		position() : component(Component::POSITION) {}
-		position(const point& p) : component(Component::POSITION), pos(p) {}
+		explicit position(const point& p) : component(Component::POSITION), pos(p) {}
 		point pos;
 		point mov;
 	};
@@ -90,11 +91,9 @@ namespace component
 	struct sprite : public component
 	{
 		sprite() : component(Component::SPRITE) {}
-		sprite(KRE::TexturePtr t, const rect& area=rect());
-		sprite(const std::string& filename, const rect& area=rect());
-		~sprite();
-		void update_texture(KRE::TexturePtr t);
-		KRE::TexturePtr tex;
+		explicit sprite(const KRE::SceneObjectPtr& spr) : component(Component::SPRITE), obj(spr) {}
+		~sprite() {}
+		KRE::SceneObjectPtr obj;
 	};
 
 	struct stats : public component

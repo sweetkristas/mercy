@@ -245,6 +245,53 @@ namespace KRE
 		attribs_->clear();
 	}
 
+	ColoredFontRenderable::ColoredFontRenderable() 
+		: SceneObject("colored-font-renderable")
+	{
+		ShaderProgramPtr shader = ShaderProgram::getProgram("font_shader");
+		setShader(shader);
+		auto as = DisplayDevice::createAttributeSet();
+		attribs_.reset(new Attribute<font_colored_coord>(AccessFreqHint::DYNAMIC, AccessTypeHint::DRAW));
+		attribs_->addAttributeDesc(AttributeDesc(AttrType::POSITION, 2, AttrFormat::FLOAT, false, sizeof(font_colored_coord), offsetof(font_colored_coord, vtx)));
+		attribs_->addAttributeDesc(AttributeDesc(AttrType::TEXTURE,  2, AttrFormat::FLOAT, false, sizeof(font_colored_coord), offsetof(font_colored_coord, tc)));
+		attribs_->addAttributeDesc(AttributeDesc(AttrType::COLOR,  4, AttrFormat::UNSIGNED_BYTE, true, sizeof(font_colored_coord), offsetof(font_colored_coord, color)));
+		as->addAttribute(AttributeBasePtr(attribs_));
+		as->setDrawMode(DrawMode::TRIANGLES);
+		as->clearblendState();
+		as->clearBlendMode();
+
+		addAttributeSet(as);
+
+		int u_ignore_alpha = shader->getUniform("ignore_alpha");
+		shader->setUniformDrawFunction([u_ignore_alpha](ShaderProgramPtr shader) {
+			shader->setUniformValue(u_ignore_alpha, 0);
+		});				
+	}
+
+	void ColoredFontRenderable::preRender(const WindowPtr& wnd)
+	{
+		//ASSERT_LOG(color_ != nullptr, "Color pointer was null.");
+		if(color_ != nullptr) {
+			setColor(*color_);
+		}
+	}
+
+	void ColoredFontRenderable::setColorPointer(const ColorPtr& color) 
+	{
+		ASSERT_LOG(color != nullptr, "Font color was null.");
+		color_ = color;
+	}
+
+	void ColoredFontRenderable::update(std::vector<font_colored_coord>* queue)
+	{
+		attribs_->update(queue, attribs_->end());
+	}
+
+	void ColoredFontRenderable::clear()
+	{
+		attribs_->clear();
+	}
+
 	FontHandle::FontHandle(std::unique_ptr<Impl>&& impl, const std::string& fnt_name, const std::string& fnt_path, float size, const Color& color, bool init_texture)
 		: impl_(std::move(impl))
 	{
@@ -307,6 +354,11 @@ namespace KRE
 	FontRenderablePtr FontHandle::createRenderableFromPath(FontRenderablePtr r, const std::string& text, const std::vector<point>& path)
 	{
 		return impl_->createRenderableFromPath(r, text, path);
+	}
+
+	ColoredFontRenderablePtr FontHandle::createColoredRenderableFromPath(ColoredFontRenderablePtr r, const std::string& text, const std::vector<point>& path, const std::vector<KRE::Color>& colors)
+	{
+		return impl_->createColoredRenderableFromPath(r, text, path, colors);
 	}
 
 	int FontHandle::calculateCharAdvance(char32_t cp)

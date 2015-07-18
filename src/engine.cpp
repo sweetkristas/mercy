@@ -144,9 +144,12 @@ void engine::process_events()
 					}
 				} else if(evt.key.keysym.scancode == SDL_SCANCODE_T) {
 					// XXX testcode
-					int map_width = static_cast<int>(wnd_->width() / 10.0f * (72.0f/96.0f));
-					int map_height = static_cast<int>(wnd_->height() / 10.0f);
-					set_map(mercy::BaseMap::create("dungeon", map_width, map_height, variant()));
+					const int map_width = 125;
+					const int map_height = 45;
+					variant_builder features;
+					features.add("dpi_x", 144);
+					features.add("dpi_y", 144);
+					set_map(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
 				}
 				break;
 		}

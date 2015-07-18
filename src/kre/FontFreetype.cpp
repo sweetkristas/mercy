@@ -303,6 +303,11 @@ namespace KRE
 			return font_renderable;
 		}
 
+		ColoredFontRenderablePtr createColoredRenderableFromPath(ColoredFontRenderablePtr r, const std::string& text, const std::vector<point>& path, const std::vector<KRE::Color>& colors) override
+		{
+			return nullptr;
+		}
+
 		const GlyphInfo& getGlyphInfo(char32_t cp)
 		{
 			auto it = glyph_info_.find(cp);

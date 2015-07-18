@@ -14,6 +14,7 @@
     <ClInclude Include="..\src\action_process.hpp" />
     <ClInclude Include="..\src\ai_process.hpp" />
     <ClInclude Include="..\src\asserts.hpp" />
+    <ClInclude Include="..\src\cave.hpp" />
     <ClInclude Include="..\src\collision_process.hpp" />
     <ClInclude Include="..\src\component.hpp" />
     <ClInclude Include="..\src\creature.hpp" />
@@ -172,6 +173,7 @@
   <ItemGroup>
     <ClCompile Include="..\src\action_process.cpp" />
     <ClCompile Include="..\src\ai_process.cpp" />
+    <ClCompile Include="..\src\cave.cpp" />
     <ClCompile Include="..\src\collision_process.cpp" />
     <ClCompile Include="..\src\component.cpp" />
     <ClCompile Include="..\src\creature.cpp" />
@@ -327,6 +329,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets>Build</CustomBuildAfterTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -357,6 +360,9 @@
     <CustomBuildStep>
       <TreatOutputAsContent>true</TreatOutputAsContent>
     </CustomBuildStep>
+    <Manifest>
+      <AdditionalManifestFiles>DeclareDPIAware.manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -375,7 +381,15 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>..\external\lib\$(Configuration)\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
+    <CustomBuildStep>
+      <Command>copy/Y $(TargetPath) ..\build-$(Platform)-$(Configuration)\$(TargetFileName)</Command>
+      <Message>Copying files to executable directory.</Message>
+      <Outputs>..\build-$(Platform)-$(Configuration)\$(TargetFileName);%(Outputs)</Outputs>
+      <Inputs>$(TargetPath);%(Inputs)</Inputs>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

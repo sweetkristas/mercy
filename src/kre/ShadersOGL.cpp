@@ -350,10 +350,13 @@ namespace KRE
 				"uniform mat4 u_mvp_matrix;\n"
 				"attribute vec2 a_position;\n"
 				"attribute vec2 a_texcoord;\n"
+				"attribute vec4 a_color;\n"
 				"varying vec2 v_texcoord;\n"
+				"varying vec4 v_color;\n"
 				"void main()\n"
 				"{\n"
 				"    v_texcoord = a_texcoord;\n"
+				"    v_color = a_color;\n"
 				"    gl_Position = u_mvp_matrix * vec4(a_position,0.0,1.0);\n"
 				"}\n";
 			const char* const font_shader_fs = 
@@ -361,6 +364,7 @@ namespace KRE
 				"uniform sampler2D u_tex_map;\n"
 				"uniform vec4 u_color;\n"
 				"uniform bool ignore_alpha;\n"
+				"varying vec4 v_color;\n"
 				"varying vec2 v_texcoord;\n"
 				"void main()\n"
 				"{\n"
@@ -368,7 +372,7 @@ namespace KRE
 				"    if(ignore_alpha && color.a > 0) {\n"
 				"	     color.a = 255;\n"
 				"    }\n"
-				"    gl_FragColor = color * u_color;\n"
+				"    gl_FragColor = color * v_color * u_color;\n"
 				"}\n";
 			const uniform_mapping font_shader_uniform_mapping[] = 
 			{
@@ -381,6 +385,7 @@ namespace KRE
 			{
 				{"position", "a_position"},
 				{"texcoord", "a_texcoord"},
+				{"color", "a_color"},
 				{"", ""},
 			};
 

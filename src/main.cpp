@@ -55,7 +55,9 @@
 #include "engine.hpp"
 #include "action_process.hpp"
 #include "ai_process.hpp"
+#include "cave.hpp"
 #include "collision_process.hpp"
+#include "component.hpp"
 #include "input_process.hpp"
 #include "map.hpp"
 #include "random.hpp"
@@ -195,6 +197,97 @@ void read_system_fonts(sys::file_path_map* res)
 #endif
 }
 
+// dpi abstraction
+class DeviceMetrics
+{
+public:
+	DeviceMetrics()
+		: dpi_x_(96),
+		  dpi_y_(96)
+	{
+#if defined(_MSC_VER)
+		HDC hdc = GetDC(nullptr);
+		if (hdc) {
+			dpi_x_ = GetDeviceCaps(hdc, LOGPIXELSX);
+			dpi_y_ = GetDeviceCaps(hdc, LOGPIXELSY);
+			ReleaseDC(nullptr, hdc);
+		}
+#elif defined(linux) || defined(__linux__)
+		int screen_number = 0;
+		Display* disp = XOpenDisplay(nullptr);
+		const int dw = DisplayWidth(disp, screen_number);
+		const int dh = DisplayHeight(disp, screen_number)
+		const int dw_mm = DisplayWidthMM(disp, screen_number);
+		const int dh_mm = DisplayHeightMM(disp, screen_number);
+		if(dw_mm != 0) {
+			dpi_x_ = (dw * 2540) / (dw_mm * 100);
+		}
+		if(dh_mm != 0) {
+			dpi_y_ = (dh * 2540) / (dh_mm * 100);
+		}
+#elif defined(__APPLE__) 
+	#include "TargetConditionals.h"
+	#if TARGET_OS_IPHONE && TARGET_IPHONE_SIMULATOR
+		// simulator
+	#elif TARGET_OS_IPHONE
+		// iphone
+	#else
+		// osx
+		/*
+		NSScreen *screen = [NSScreen mainScreen];
+		NSDictionary *description = [screen deviceDescription];
+		NSSize displayPixelSize = [[description objectForKey:NSDeviceSize] sizeValue];
+		CGSize displayPhysicalSize = CGDisplayScreenSize(
+					[[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
+
+		NSLog(@"DPI is %0.2f", 
+				 (displayPixelSize.width / displayPhysicalSize.width) * 25.4f); 
+				 // there being 25.4 mm in an inch
+		*/
+	#endif
+#else
+#endif
+		LOG_INFO("Device DPI in use: " << dpi_x_ << ", " << dpi_y_);
+	}
+	int getDpiX() const { return dpi_x_; }
+	int getDpiY() const { return dpi_y_; }
+private:
+	int dpi_x_;
+	int dpi_y_;
+};
+
+void create_player(engine& e, const point& start)
+{
+	component_set_ptr player = std::make_shared<component::component_set>(100);
+	// Player component simply acts as a tag for the entity
+	//font::font_ptr fnt = font::get_font("SourceCodePro-Regular.ttf", 20);
+	player->mask |= component::genmask(component::Component::PLAYER);
+	player->mask |= component::genmask(component::Component::POSITION);
+	player->mask |= component::genmask(component::Component::STATS);
+	player->mask |= component::genmask(component::Component::INPUT);
+	player->mask |= component::genmask(component::Component::SPRITE);
+	player->mask |= component::genmask(component::Component::COLLISION);
+	player->pos = std::make_shared<component::position>(start);
+	e.set_camera(player->pos->pos);
+	player->stat = std::make_shared<component::stats>();
+	player->stat->health = 10;
+	player->inp = std::make_shared<component::input>();
+	//auto surf = std::make_shared<graphics::surface>(font::render_shaded("@", fnt, graphics::color(255,255,255), graphics::color(255,0,0)));
+	//auto surf = std::make_shared<graphics::surface>("images/spritely_fellow.png");
+	// XX codify this better.
+	std::vector<std::string> ff;
+	ff.emplace_back("SourceCodePro-Regular");
+	const int font_size = 10;
+	const float fs = static_cast<float>(font_size * 144.0f) / 72.0f;
+	auto fh = KRE::FontDriver::getFontHandle(ff, fs);
+	auto glyph_path = fh->getGlyphPath("@");
+	auto spr = fh->createRenderableFromPath(nullptr, "@", glyph_path);
+	player->spr = std::make_shared<component::sprite>(spr);
+	spr->setPosition(start.x, start.y);
+	e.add_entity(player);
+
+	e.getSceneGraph()->getRootNode()->attachObject(spr);
+}
 
 int main(int argc, char* argv[])
 {
@@ -269,11 +362,22 @@ int main(int argc, char* argv[])
 	eng->add_process(std::make_shared<process::em_collision>());
 	eng->add_process(std::make_shared<process::ee_collision>());
 
-	// XXX this bit of hackery calculates the number of characters to draw maximally draw to fill the screen
-	// based on a font-size of 10. 96.0 is the dpi to use
-	int map_width = static_cast<int>(width / 10.0f * (72.0f/96.0f));
-	int map_height = static_cast<int>(height / 10.0f);
-	eng->set_map(mercy::BaseMap::create("dungeon", map_width, map_height, variant()));
+	// XX move device metrics into KRE DisplayDevice.
+	DeviceMetrics dm;
+
+	const int map_width = 125;
+	const int map_height = 45;
+	variant_builder features;
+	features.add("dpi_x", dm.getDpiX());
+	features.add("dpi_y", dm.getDpiY());
+	eng->set_map(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
+
+	create_player(*eng, point(map_width/2, map_height/2));
+
+	//auto cave_test = mercy::cave_fixed_param(80, 50);
+	//for(auto& line : cave_test) {
+	//	std::cout << "    " << line << "\n";
+	//}
 
 	//SDL_Event e;
 	bool running = true;
@@ -332,6 +436,8 @@ int main(int argc, char* argv[])
 
 		scene->renderScene(rman);
 		rman->render(main_wnd);
+
+		
 
 		if(scene_tree != nullptr) {
 			scene_tree->preRender(main_wnd);

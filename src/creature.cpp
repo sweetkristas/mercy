@@ -114,7 +114,8 @@ namespace creature
 				}
 				if((component_mask_ & genmask(Component::SPRITE)) == genmask(Component::SPRITE)) {
 					// The whole sprite mess needs fixed, since it doesn't take an area.
-					res->spr = std::make_shared<sprite>(sprite_name_, sprite_area_);
+					// XXX fixme
+					///res->spr = std::make_shared<sprite>(sprite_name_, sprite_area_);
 				}
 				if((component_mask_ & genmask(Component::AI)) == genmask(Component::AI)) {
 					res->aip = std::make_shared<ai>();

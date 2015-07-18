@@ -70,6 +70,8 @@ public:
 
 	void set_map(const mercy::BaseMapPtr& map);
 
+	// XXX hack
+	KRE::SceneGraphPtr getSceneGraph() const { return sg_; }
 private:
 	void translate_mouse_coords(SDL_Event* evt);
 	void process_events();

@@ -72,6 +72,35 @@ namespace KRE
 	};
 	typedef std::shared_ptr<FontRenderable> FontRenderablePtr;
 
+	struct font_colored_coord
+	{
+		font_colored_coord(const glm::vec2& v, const glm::vec2& t, const glm::u8vec4& c) : vtx(v), tc(t), color(c) {}
+		glm::vec2 vtx;
+		glm::vec2 tc;
+		glm::u8vec4 color;
+	};
+
+	class ColoredFontRenderable : public SceneObject
+	{
+	public:
+		ColoredFontRenderable();
+		void clear();
+		void update(std::vector<font_colored_coord>* queue);
+		int getWidth() const { return width_; }
+		int getHeight() const { return height_; }
+		void setWidth(int width) { width_ = width; }
+		void setHeight(int height) { height_ = height; }
+		void setColorPointer(const ColorPtr& color);
+		void preRender(const WindowPtr& wnd);
+	private:
+		std::shared_ptr<Attribute<font_colored_coord>> attribs_;
+		// intrinsic width and height when rendered, in pixels.
+		int width_;
+		int height_;
+		ColorPtr color_;
+	};
+	typedef std::shared_ptr<ColoredFontRenderable> ColoredFontRenderablePtr;
+
 	class FontHandle
 	{
 	public:
@@ -88,6 +117,7 @@ namespace KRE
 		int getDescender();
 		rect getBoundingBox(const std::string& text);
 		FontRenderablePtr createRenderableFromPath(FontRenderablePtr r, const std::string& text, const std::vector<point>& path);
+		ColoredFontRenderablePtr createColoredRenderableFromPath(ColoredFontRenderablePtr r, const std::string& text, const std::vector<point>& path, const std::vector<KRE::Color>& colors);
 		const std::vector<point>& getGlyphPath(const std::string& text);
 		int calculateCharAdvance(char32_t cp);
 		int getScaleFactor() const { return 65536; }

@@ -57,21 +57,6 @@ namespace component
 		return static_cast<Component>(0);
 	}
 
-	sprite::sprite(const std::string& filename, const rect& area)
-		: component(Component::SPRITE),
-		  tex(KRE::Texture::createTexture(filename))
-	{
-	}
-
-	sprite::~sprite()
-	{
-	}
-
-	void sprite::update_texture(KRE::TexturePtr t)
-	{
-		tex = t;
-	}
-
 	lights::lights() 
 		: component(Component::LIGHTS)
 	{
