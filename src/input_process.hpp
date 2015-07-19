@@ -32,8 +32,7 @@ namespace process
 	{
 	public:
 		input();
-		~input();
-		void update(engine& eng, double t, const entity_list& elist) override;
+		void update(engine& eng, float t, const entity_list& elist) override;
 	private:
 		bool handle_event(const SDL_Event& evt);
 		std::queue<SDL_Scancode> keys_pressed_;

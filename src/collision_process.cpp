@@ -33,13 +33,9 @@ namespace process
 	
 	}
 	
-	ee_collision::~ee_collision()
-	{
-	}
-
 	// XXX Should we split this into a map/entity collision and entity/entity collision
 	// classes?
-	void ee_collision::update(engine& eng, double t, const entity_list& elist)
+	void ee_collision::update(engine& eng, float t, const entity_list& elist)
 	{
 		using namespace component;
 		static component_id collision_mask = genmask(Component::POSITION) | genmask(Component::COLLISION);
@@ -72,11 +68,7 @@ namespace process
 	{
 	}
 	
-	em_collision::~em_collision()
-	{
-	}
-
-	void em_collision::update(engine& eng, double t, const entity_list& elist)
+	void em_collision::update(engine& eng, float t, const entity_list& elist)
 	{
 		using namespace component;
 		static component_id collision_mask = genmask(Component::COLLISION) | genmask(Component::POSITION);

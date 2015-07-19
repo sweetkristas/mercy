@@ -33,10 +33,6 @@ namespace process
 	{
 	}
 
-	input::~input()
-	{
-	}
-
 	bool input::handle_event(const SDL_Event& evt)
 	{
 		if(evt.type == SDL_KEYDOWN) {
@@ -46,7 +42,7 @@ namespace process
 		return false;
 	}
 
-	void input::update(engine& eng, double t, const entity_list& elist)
+	void input::update(engine& eng, float t, const entity_list& elist)
 	{
 		static component_id input_mask 
 			= component::genmask(component::Component::POSITION) 

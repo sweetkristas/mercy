@@ -43,8 +43,12 @@ namespace mercy
 		static BaseMapPtr create(const std::string& type, int width, int height, const variant& features);
 		virtual KRE::SceneObjectPtr createRenderable() = 0;
 		virtual void generate() = 0;
+		const pointf& getTileSize() const { return tile_size_; }
+	protected:
+		void setTileSize(float x, float y) { tile_size_.x = x; tile_size_.y = y; }
 	private:
 		int width_;
 		int height_;
+		pointf tile_size_;
 	};
 }

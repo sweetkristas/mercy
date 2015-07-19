@@ -47,7 +47,7 @@ namespace process
 		virtual ~process();
 		virtual void start() {}
 		virtual void end() {}
-		virtual void update(engine& eng, double t, const entity_list& elist) = 0;
+		virtual void update(engine& eng, float t, const entity_list& elist) = 0;
 
 		bool process_event(const SDL_Event& evt);
 		ProcessPriority get_priority() const { return priority_; }

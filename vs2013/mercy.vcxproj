@@ -110,11 +110,14 @@
     <ClInclude Include="..\src\lexical_cast.hpp" />
     <ClInclude Include="..\src\map.hpp" />
     <ClInclude Include="..\src\noiseutils.h" />
+    <ClInclude Include="..\src\poly_map.hpp" />
     <ClInclude Include="..\src\process.hpp" />
     <ClInclude Include="..\src\profile_timer.hpp" />
     <ClInclude Include="..\src\quadtree.hpp" />
     <ClInclude Include="..\src\random.hpp" />
     <ClInclude Include="..\src\randutils.hpp" />
+    <ClInclude Include="..\src\render_process.hpp" />
+    <ClInclude Include="..\src\simplex_noise.hpp" />
     <ClInclude Include="..\src\svg\easy_svg.hpp" />
     <ClInclude Include="..\src\svg\svg_attribs.hpp" />
     <ClInclude Include="..\src\svg\svg_container.hpp" />
@@ -135,6 +138,7 @@
     <ClInclude Include="..\src\utf8_to_codepoint.hpp" />
     <ClInclude Include="..\src\variant.hpp" />
     <ClInclude Include="..\src\variant_utils.hpp" />
+    <ClInclude Include="..\src\VoronoiDiagramGenerator.h" />
     <ClInclude Include="..\src\xhtml\css_lexer.hpp" />
     <ClInclude Include="..\src\xhtml\css_parser.hpp" />
     <ClInclude Include="..\src\xhtml\css_properties.hpp" />
@@ -248,8 +252,11 @@
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\map.cpp" />
     <ClCompile Include="..\src\noiseutils.cpp" />
+    <ClCompile Include="..\src\poly_map.cpp" />
     <ClCompile Include="..\src\process.cpp" />
     <ClCompile Include="..\src\random.cpp" />
+    <ClCompile Include="..\src\render_process.cpp" />
+    <ClCompile Include="..\src\simplex_noise.cpp" />
     <ClCompile Include="..\src\svg\easy_svg.cpp" />
     <ClCompile Include="..\src\svg\svg_attribs.cpp" />
     <ClCompile Include="..\src\svg\svg_container.cpp" />
@@ -265,6 +272,7 @@
     <ClCompile Include="..\src\unit_test.cpp" />
     <ClCompile Include="..\src\variant.cpp" />
     <ClCompile Include="..\src\variant_utils.cpp" />
+    <ClCompile Include="..\src\VoronoiDiagramGenerator.cpp" />
     <ClCompile Include="..\src\xhtml\css_lexer.cpp" />
     <ClCompile Include="..\src\xhtml\css_parser.cpp" />
     <ClCompile Include="..\src\xhtml\css_properties.cpp" />
@@ -337,7 +345,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;NOMINMAX;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\external\include\SDL;..\external\include;..\src\xhtml;..\src\svg;..\src\kre;..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -372,7 +380,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;NOMINMAX;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\external\include\SDL;..\external\include;..\src\xhtml;..\src\svg;..\src\kre;..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>

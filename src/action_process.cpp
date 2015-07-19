@@ -32,11 +32,7 @@ namespace process
 	{
 	}
 
-	action::~action()
-	{
-	}
-
-	void action::update(engine& eng, double t, const entity_list& elist)
+	void action::update(engine& eng, float t, const entity_list& elist)
 	{
 		using namespace component;
 		static component_id mask = genmask(Component::INPUT) | genmask(Component::POSITION);

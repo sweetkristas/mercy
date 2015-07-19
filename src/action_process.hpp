@@ -31,8 +31,7 @@ namespace process
 	{
 	public:
 		action();
-		~action();
-		void update(engine& eng, double t, const entity_list& elist) override;
+		void update(engine& eng, float t, const entity_list& elist) override;
 	private:
 	};
 }

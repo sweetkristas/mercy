@@ -61,6 +61,7 @@
 #include "input_process.hpp"
 #include "map.hpp"
 #include "random.hpp"
+#include "render_process.hpp"
 
 #if defined(_MSC_VER)
 #define WIN32_LEAN_AND_MEAN
@@ -285,8 +286,6 @@ void create_player(engine& e, const point& start)
 	player->spr = std::make_shared<component::sprite>(spr);
 	spr->setPosition(start.x, start.y);
 	e.add_entity(player);
-
-	e.getSceneGraph()->getRootNode()->attachObject(spr);
 }
 
 int main(int argc, char* argv[])
@@ -353,7 +352,7 @@ int main(int argc, char* argv[])
 
 	auto canvas = Canvas::getInstance();
 
-	std::unique_ptr<engine> eng(new engine(main_wnd, scene));
+	std::unique_ptr<engine> eng(new engine(main_wnd));
 
 	eng->add_process(std::make_shared<process::input>());
 	eng->add_process(std::make_shared<process::ai>());
@@ -361,6 +360,7 @@ int main(int argc, char* argv[])
 	// N.B. entity/map collision needs to come before entity/entity collision
 	eng->add_process(std::make_shared<process::em_collision>());
 	eng->add_process(std::make_shared<process::ee_collision>());
+	eng->add_process(std::make_shared<process::render>());
 
 	// XX move device metrics into KRE DisplayDevice.
 	DeviceMetrics dm;
@@ -370,7 +370,7 @@ int main(int argc, char* argv[])
 	variant_builder features;
 	features.add("dpi_x", dm.getDpiX());
 	features.add("dpi_y", dm.getDpiY());
-	eng->set_map(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
+	eng->setMap(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
 
 	create_player(*eng, point(map_width/2, map_height/2));
 
@@ -434,10 +434,8 @@ int main(int argc, char* argv[])
 		running = eng->update(dt);
 		last_tick_time = current_tick_time;
 
-		scene->renderScene(rman);
-		rman->render(main_wnd);
-
-		
+		//scene->renderScene(rman);
+		//rman->render(main_wnd);
 
 		if(scene_tree != nullptr) {
 			scene_tree->preRender(main_wnd);

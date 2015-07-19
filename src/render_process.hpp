@@ -27,14 +27,11 @@
 
 namespace process
 {
-	class ai : public process
+	class render : public process
 	{
 	public:
-		ai();
+		render();
 		void update(engine& eng, float t, const entity_list& elist) override;
 	private:
-		bool handle_event(const SDL_Event& evt);
-		bool should_update_;
-		int update_turns_;
 	};
 }

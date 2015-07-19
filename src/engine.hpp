@@ -46,7 +46,7 @@ enum class EngineUserEvents {
 class engine
 {
 public:
-	engine(const KRE::WindowPtr& wnd, const KRE::SceneGraphPtr& sg);
+	engine(const KRE::WindowPtr& wnd);
 	~engine();
 	
 	void add_entity(component_set_ptr e);
@@ -58,7 +58,7 @@ public:
 	void set_state(EngineState state) { state_ = state; }
 	EngineState get_state() const { return state_; }
 
-	bool update(double time);
+	bool update(float time);
 
 	int get_turns() const { return turns_; }
 	void inc_turns(int cnt = 1);
@@ -68,10 +68,10 @@ public:
 
 	entity_list entities_in_area(const rect& r);
 
-	void set_map(const mercy::BaseMapPtr& map);
+	void setMap(const mercy::BaseMapPtr& map);
+	const mercy::BaseMapPtr& getMap() const { return map_; }
 
-	// XXX hack
-	KRE::SceneGraphPtr getSceneGraph() const { return sg_; }
+	KRE::WindowPtr getWindow() const { return wnd_; }
 private:
 	void translate_mouse_coords(SDL_Event* evt);
 	void process_events();
@@ -80,7 +80,6 @@ private:
 	int turns_;
 	point camera_;
 	KRE::WindowPtr wnd_; 
-	KRE::SceneGraphPtr sg_;
 	entity_list entity_list_;
 	quadtree<component_set_ptr> entity_quads_;
 	std::vector<process::process_ptr> process_list_;

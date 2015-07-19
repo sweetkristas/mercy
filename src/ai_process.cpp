@@ -38,10 +38,6 @@ namespace process
 	{
 	}
 
-	ai::~ai()
-	{
-	}
-
 	bool ai::handle_event(const SDL_Event& evt)
 	{
 		switch(evt.type) {
@@ -55,7 +51,7 @@ namespace process
 		return false;
 	}
 	
-	void ai::update(engine& eng, double t, const entity_list& elist)
+	void ai::update(engine& eng, float t, const entity_list& elist)
 	{
 		using namespace component;
 		if(!should_update_) {

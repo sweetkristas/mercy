@@ -31,15 +31,13 @@ namespace process
 	{
 	public:
 		ee_collision();
-		~ee_collision();
-		void update(engine& eng, double t, const entity_list& elist) override;
+		void update(engine& eng, float t, const entity_list& elist) override;
 	};
 
 	class em_collision : public process
 	{
 	public:
 		em_collision();
-		~em_collision();
-		void update(engine& eng, double t, const entity_list& elist) override;
+		void update(engine& eng, float t, const entity_list& elist) override;
 	};
 }

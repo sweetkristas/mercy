@@ -44,11 +44,10 @@ double get_mouse_scale_factor()
 	return mouse_event_scale_factor;
 }
 
-engine::engine(const KRE::WindowPtr& wnd, const KRE::SceneGraphPtr& sg)
+engine::engine(const KRE::WindowPtr& wnd)
 	: state_(EngineState::PLAY),
 	  turns_(1),
 	  wnd_(wnd),
-	  sg_(sg),
 	  entity_quads_(0, rect(0,0,100,100))
 {
 }
@@ -149,7 +148,7 @@ void engine::process_events()
 					variant_builder features;
 					features.add("dpi_x", 144);
 					features.add("dpi_y", 144);
-					set_map(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
+					setMap(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
 				}
 				break;
 		}
@@ -190,7 +189,7 @@ entity_list engine::entities_in_area(const rect& r)
 	return res;
 }
 
-bool engine::update(double time)
+bool engine::update(float time)
 {
 	process_events();
 	if(state_ == EngineState::PAUSE || state_ == EngineState::QUIT) {
@@ -222,11 +221,7 @@ void engine::inc_turns(int cnt)
 	turns_ += cnt;
 }
 
-void engine::set_map(const mercy::BaseMapPtr& map) 
+void engine::setMap(const mercy::BaseMapPtr& map) 
 {
 	map_ = map; 
-	if(map_ != nullptr) {
-		sg_->getRootNode()->clear();
-		sg_->getRootNode()->attachObject(map_->createRenderable());
-	}
 }

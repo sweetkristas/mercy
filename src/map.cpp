@@ -67,6 +67,10 @@ namespace mercy
 				std::vector<point> final_path;
 				int y = static_cast<int>(fh->getScaleFactor() * fs);
 				std::vector<KRE::Color> colors;
+				
+				const float ts_x = static_cast<float>(fh->calculateCharAdvance('x') / 65536.0f);
+				const float ts_y = fs;
+				setTileSize(ts_x, ts_y);
 
 				std::vector<std::string> transformed_output;
 				for(auto& row : output_) {
@@ -358,7 +362,8 @@ namespace mercy
 
 	BaseMap::BaseMap(int width, int height)
 		: width_(width),
-		  height_(height)
+		  height_(height),
+		  tile_size_(0, 0)
 	{
 	}
 
