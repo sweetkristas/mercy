@@ -60,9 +60,7 @@ namespace KRE
 		HardwareAttributeImpl(AttributeBase* parent) : HardwareAttribute(parent), value_(0) {}
 		virtual ~HardwareAttributeImpl() {}
 		void update(const void* value, ptrdiff_t offset, size_t size) {
-			if(offset == 0) {
-				value_ = reinterpret_cast<intptr_t>(value);
-			}
+			value_ = reinterpret_cast<intptr_t>(value);
 		}
 		void bind() {}
 		void unbind() {}
@@ -239,7 +237,7 @@ namespace KRE
 			ASSERT_LOG(getParent() != nullptr && getParent()->isMultiDrawEnabled(), "Parent attribute set not enabled for multi-draw. Call enableMultiDraw() on parent.");
 			std::ptrdiff_t dst1 = elements_.size();
 			std::ptrdiff_t dst2 = std::distance(src->begin(), src->end());
-			std::copy(src->begin(), src->end(), std::inserter(elements_, elements_.end()));
+			std::move(src->begin(), src->end(), std::inserter(elements_, elements_.end()));
 			if(getDeviceBufferData() && dst2 > 0) {
 				getDeviceBufferData()->update(&elements_[0], dst1, dst2 * sizeof(T));
 			}

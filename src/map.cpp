@@ -32,10 +32,23 @@
 #include "random.hpp"
 #include "utf8_to_codepoint.hpp"
 
+extern KRE::SceneObjectPtr text_block_renderer(const std::vector<std::string>& strs, const std::vector<KRE::Color>& colors, float* ts_x, float* ts_y);
+
 namespace mercy
 {
 	namespace
 	{
+		enum class DungeonTile {
+			ceiling,
+			floor,
+			wall,
+			door,
+			pit,
+			lava,
+			water,
+			perimeter,
+		};
+
 		class DungeonMap : public BaseMap
 		{
 		public:
@@ -55,22 +68,7 @@ namespace mercy
 			KRE::SceneObjectPtr createRenderable() override
 			{
 				profile::manager pman("DungeonMap::createRenderable");
-				std::vector<std::string> ff;
-				ff.emplace_back("SourceCodePro-Regular");
-				ff.emplace_back("square");
-				ff.emplace_back("whitrabt");
-				ff.emplace_back("monospace");
-
-				const int font_size = 10;
-				const float fs = static_cast<float>(font_size * dpi_y_) / 72.0f;
-				auto fh = KRE::FontDriver::getFontHandle(ff, fs);
-				std::vector<point> final_path;
-				int y = static_cast<int>(fh->getScaleFactor() * fs);
 				std::vector<KRE::Color> colors;
-				
-				const float ts_x = static_cast<float>(fh->calculateCharAdvance('x') / 65536.0f);
-				const float ts_y = fs;
-				setTileSize(ts_x, ts_y);
 
 				std::vector<std::string> transformed_output;
 				for(auto& row : output_) {
@@ -96,17 +94,10 @@ namespace mercy
 					transformed_output.emplace_back(txf_row);
 				}
 
-				std::string concat_op;
-				for(auto& op : transformed_output) {
-					auto glyph_path = fh->getGlyphPath(op);
-					for(auto it = glyph_path.begin(); it != glyph_path.end()-1; ++it) {
-						auto& gp = *it;
-						final_path.emplace_back(gp.x, gp.y + y);
-					}
-					concat_op += op;
-					y += static_cast<int>(fh->getScaleFactor() * fs);
-				}
-				return fh->createColoredRenderableFromPath(nullptr, concat_op, final_path, colors);
+				float ts_x, ts_y;
+				auto r = text_block_renderer(transformed_output, colors, &ts_x, &ts_y);
+				setTileSize(ts_x, ts_y);
+				return r;
 			}
 			void generate() override
 			{
@@ -250,26 +241,6 @@ namespace mercy
 					}
 				}
 
-				//for(int n = 0; n != edges.size(); ++n) {
-				//	std::cout << "edge(" << edges[n].first << "," << edges[n].second << ") -- " << weights[n] << "\n";
-				//}
-
-				/*
-				for(int n = 0; n != rooms.size(); ++n) {
-					for(int m = 0; m != rooms.size(); ++m) {
-						if(n != m) {
-							edges.emplace_back(E(n, m));
-
-							const point p1 = rooms[m].mid();
-							const point p2 = rooms[n].mid();
-							const int dx = std::abs(p1.x - p2.x);
-							const int dy = std::abs(p1.y - p2.y);
-							const int len = static_cast<int>(std::sqrt(dx * dx + dy * dy) * 1000.0f);
-							weights.emplace_back(len);
-						}
-					}					
-				}
-				*/
 				const int num_nodes = rooms.size();
 				Graph g(edges.begin(), edges.end(), weights.data(), num_nodes);
 				property_map<Graph, edge_weight_t>::type weightmap = get(edge_weight, g);
@@ -277,8 +248,6 @@ namespace mercy
 				prim_minimum_spanning_tree(g, &p[0]);
 				for (std::size_t i = 0; i != p.size(); ++i) {
 					if (p[i] != i) {
-						//std::cout << "parent[" << i << "] = " << p[i] << std::endl;
-						// XXX test draw line from i to [i]
 						const point p1 = rooms[i].mid();
 						const point p2 = rooms[p[i]].mid();
 						const int start_x = p1.x < p2.x ? p1.x : p2.x;
@@ -334,26 +303,45 @@ namespace mercy
 						if(output_[end_y][end_x+1] == ' ') {
 							output_[end_y][end_x+1] = '#';
 						}
-					} else {
-						//std::cout << "parent[" << i << "] = no parent" << std::endl;
 					}
 				}
 
-				/*int n = 0;
-				for(auto& room : rooms) {
-					const point p1 = room.mid();
-					output_[p1.y][p1.x] = n + '0';
-					++n;
-				}*/
-
-				//for(auto& op : output_) {
-				//	std::cout << op << "\n";
-				//}
 				LOG_DEBUG("map size: " << map_width << "x" << map_height);
 				LOG_DEBUG("rooms built: " << rooms.size());
 				LOG_DEBUG("Number of rooms we tried to construct: " << num_rooms);
 			}
+			bool blocksLight(int x, int y) const override
+			{
+				if(x < 0 || y < 0 || y >= static_cast<int>(output_.size())) {
+					return true;
+				}
+				if(x >= static_cast<int>(output_[y].size())) {
+					return true;
+				}
+				char c = output_[y][x];
+				if(c == '.') {
+					return false;
+				}
+				return true;
+			}
+			void setVisible(int x, int y) override
+			{
+				LOG_DEBUG("Tile visible at: " << x << "," << y);
+			}
+			int getDistance(int x, int y) const override
+			{
+				//return x + y;	// Manhattan distance
+				return static_cast<int>(std::sqrt(static_cast<float>(x * x + y * y)));
+			}
 		private:
+			struct TileInfo {
+				DungeonTile type;
+				// Visibility information.
+				//	bit 0 -- 1 if currently visible, 0 if can't be seen
+				//  bit 1 -- 1 if has been seen in the past, 0 if never been seen.
+				int visibility;
+			};
+			std::vector<std::vector<TileInfo>> tiles_;
 			std::vector<std::string> output_;
 			int dpi_x_;
 			int dpi_y_;

@@ -44,6 +44,10 @@ namespace mercy
 		virtual KRE::SceneObjectPtr createRenderable() = 0;
 		virtual void generate() = 0;
 		const pointf& getTileSize() const { return tile_size_; }
+
+		virtual bool blocksLight(int x, int y) const = 0;
+		virtual void setVisible(int x, int y) = 0;
+		virtual int getDistance(int x, int y) const = 0;
 	protected:
 		void setTileSize(float x, float y) { tile_size_.x = x; tile_size_.y = y; }
 	private:

@@ -32,6 +32,8 @@
 
 #include "asserts.hpp"
 #include "poly_map.hpp"
+#include "profile_timer.hpp"
+#include "random.hpp"
 #include "simplex_noise.hpp"
 #include "VoronoiDiagramGenerator.h"
 
@@ -124,7 +126,7 @@ namespace geometry
 				setShader(ShaderProgram::getProgram("attr_color_shader"));
 
 				auto as = DisplayDevice::createAttributeSet(false);
-				attribs_.reset(new KRE::Attribute<KRE::vertex_color>(AccessFreqHint::DYNAMIC, AccessTypeHint::DRAW));
+				attribs_.reset(new Attribute<vertex_color>(AccessFreqHint::DYNAMIC, AccessTypeHint::DRAW));
 				attribs_->addAttributeDesc(AttributeDesc(AttrType::POSITION, 2, AttrFormat::FLOAT, false, sizeof(vertex_color), offsetof(vertex_color, vertex)));
 				attribs_->addAttributeDesc(AttributeDesc(AttrType::COLOR,  4, AttrFormat::UNSIGNED_BYTE, true, sizeof(vertex_color), offsetof(vertex_color, color)));
 				as->addAttribute(attribs_);
@@ -254,16 +256,28 @@ namespace geometry
 		  pts_(),
 		  edges_(),
 		  width_(width),
-		  height_(height)
+		  height_(height),
+		  noise_multiplier_(1.5f),
+		  height_adjust_(20),
+		  polygons_()
 	{
+		profile::manager pman("PolyMap");
 		init();
 	}
 
 	PolyMap::PolyMap(const variant& v, int width, int height) 
 		: npts_(v["points"].as_int32(10)), 
 		  relaxations_(v["relaxations"].as_int32(2)),
-		  noise_multiplier_(1.5f)
+		  pts_(),
+		  edges_(),
+		  width_(width),
+		  height_(height),
+		  noise_multiplier_(1.5f),
+		  height_adjust_(v["height_adjust"].as_int32(20)),
+		  polygons_()
 	{
+		profile::manager pman("PolyMap");
+
 		if(v.has_key("island_multiplier")) {
 			noise_multiplier_ = float(v["island_multiplier"].as_float());
 		}
@@ -275,8 +289,11 @@ namespace geometry
 	{
 		// Generate an intial random series of points
 		pts_.clear();
+		LOG_DEBUG("start points");
 		for(int n = 0; n != npts_; ++n) {
-			pts_.emplace_back(std::rand() % (width_-4)+2, std::rand() % (height_-4)+2);
+			pts_.emplace_back(generator::get_uniform_real<float>(2.0f, width_ - 4.0f),
+				generator::get_uniform_real<float>(2.0f, height_ - 4.0f));
+			LOG_DEBUG("    point: " << pts_.back().x << "," << pts_.back().y);
 		}
 
 		// Calculate voronoi polygons, running multiple Lloyd relaxation cycles.
@@ -289,7 +306,7 @@ namespace geometry
 			glm::vec2 vec;
 			vec[0] = static_cast<float>(p->getCentroid().x/width_*noise_multiplier_);
 			vec[1] = static_cast<float>(p->getCentroid().y/height_*noise_multiplier_);
-			p->setHeight(static_cast<int>(noise::simplex::noise2(vec)*256.0f));
+			p->setHeight(static_cast<int>(noise::simplex::noise2(vec)*256.0f) + height_adjust_);
 			
 			if(p->height() < 0) {
 				p->setColor(KRE::Color(52, 58, 94));
@@ -323,9 +340,9 @@ namespace geometry
 		for(auto& p : polygons_) {
 			std::vector<KRE::vertex_color> vertices;
 			vertices.reserve(p->getTriangleFan().size());
+			glm::u8vec4 color = p->getColor().as_u8vec4();
 			for(auto& pt : p->getTriangleFan()) {
-				vertices.emplace_back(pt, p->getColor().as_u8vec4());
-				LOG_DEBUG("   XXX: pt: " << pt.x << "," << pt.y);
+				vertices.emplace_back(pt, color);
 			}
 			polyr->update(&vertices);
 		}
@@ -340,7 +357,7 @@ namespace geometry
 				varray_.emplace_back(p.x, p.y);
 			}
 			// close the loop
-			varray_.emplace_back(varray_[1]);
+			varray_.push_back(varray_[1]);
 
 			for(int n = 1; n != pts_.size(); ++n) {
 				vedges_.emplace_back(pts_[n-1].x, pts_[n-1].y);

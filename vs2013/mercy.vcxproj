@@ -133,11 +133,13 @@
     <ClInclude Include="..\src\svg\svg_style.hpp" />
     <ClInclude Include="..\src\svg\svg_transform.hpp" />
     <ClInclude Include="..\src\svg\utils.hpp" />
+    <ClInclude Include="..\src\terrain.hpp" />
     <ClInclude Include="..\src\unit_test.hpp" />
     <ClInclude Include="..\src\uri.hpp" />
     <ClInclude Include="..\src\utf8_to_codepoint.hpp" />
     <ClInclude Include="..\src\variant.hpp" />
     <ClInclude Include="..\src\variant_utils.hpp" />
+    <ClInclude Include="..\src\visibility.hpp" />
     <ClInclude Include="..\src\VoronoiDiagramGenerator.h" />
     <ClInclude Include="..\src\xhtml\css_lexer.hpp" />
     <ClInclude Include="..\src\xhtml\css_parser.hpp" />
@@ -269,6 +271,7 @@
     <ClCompile Include="..\src\svg\svg_style.cpp" />
     <ClCompile Include="..\src\svg\svg_transform.cpp" />
     <ClCompile Include="..\src\svg\svg_utils.cpp" />
+    <ClCompile Include="..\src\terrain.cpp" />
     <ClCompile Include="..\src\unit_test.cpp" />
     <ClCompile Include="..\src\variant.cpp" />
     <ClCompile Include="..\src\variant_utils.cpp" />

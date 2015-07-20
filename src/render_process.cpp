@@ -24,7 +24,6 @@
 #include "component.hpp"
 #include "engine.hpp"
 #include "map.hpp"
-#include "poly_map.hpp"
 #include "render_process.hpp"
 
 #include "SceneObject.hpp"
@@ -65,11 +64,6 @@ namespace process
 				wnd->render(spr->obj.get());
 			}
 		}
-
-		static geometry::PolyMap pm(10, 10, 512, 512);
-		static auto polyr = pm.createRenderable();
-		polyr->preRender(wnd);
-		wnd->render(polyr.get());
 	}
 
 }

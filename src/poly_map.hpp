@@ -153,6 +153,7 @@ namespace geometry
 
 		// Controls the island-ness of the terrain.
 		float noise_multiplier_;
+		int height_adjust_;
 
 		std::vector<PolygonPtr> polygons_;
 

@@ -442,10 +442,7 @@ namespace KRE
 					as->unbindIndex();
 				} else {
 					if(as->isMultiDrawEnabled()) {
-						for(int n = 0; n != as->getMultiDrawCount(); ++n) {
-							glDrawArrays(draw_mode, as->getMultiOffsetArray()[n], as->getMultiCountArray()[n]);
-						}
-						//glMultiDrawArrays(draw_mode, as->getMultiOffsetArray().data(), as->getMultiCountArray().data(), as->getMultiDrawCount());
+						glMultiDrawArrays(draw_mode, as->getMultiOffsetArray().data(), as->getMultiCountArray().data(), as->getMultiDrawCount());
 					} else {
 						glDrawArrays(draw_mode, static_cast<GLint>(as->getOffset()), static_cast<GLsizei>(as->getCount()));
 					}

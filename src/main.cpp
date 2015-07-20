@@ -59,9 +59,12 @@
 #include "collision_process.hpp"
 #include "component.hpp"
 #include "input_process.hpp"
+#include "json.hpp"
 #include "map.hpp"
 #include "random.hpp"
 #include "render_process.hpp"
+#include "terrain.hpp"
+#include "visibility.hpp"
 
 #if defined(_MSC_VER)
 #define WIN32_LEAN_AND_MEAN
@@ -288,6 +291,98 @@ void create_player(engine& e, const point& start)
 	e.add_entity(player);
 }
 
+class TestRenderable : public KRE::SceneObject
+{
+public:
+	TestRenderable()
+		: KRE::SceneObject("TestRenderable"),
+		  attribs_(nullptr)
+	{
+		using namespace KRE;
+		setShader(ShaderProgram::getProgram("attr_color_shader"));
+
+		auto as = DisplayDevice::createAttributeSet(false);
+		attribs_.reset(new KRE::Attribute<vertex_color>(AccessFreqHint::DYNAMIC, AccessTypeHint::DRAW));
+		attribs_->addAttributeDesc(AttributeDesc(AttrType::POSITION, 2, AttrFormat::FLOAT, false, sizeof(vertex_color), offsetof(vertex_color, vertex)));
+		attribs_->addAttributeDesc(AttributeDesc(AttrType::COLOR,  4, AttrFormat::UNSIGNED_BYTE, true, sizeof(vertex_color), offsetof(vertex_color, color)));
+		as->addAttribute(attribs_);
+		as->setDrawMode(DrawMode::TRIANGLE_STRIP);
+		as->enableMultiDraw();
+
+		addAttributeSet(as);
+
+		init();
+	}
+	void clear()
+	{
+		attribs_->clear();
+	}
+	void addRect(const rect& r, const KRE::Color& color)
+	{
+		glm::u8vec4 c = color.as_u8vec4();
+
+		const float x1 = static_cast<float>(r.x1());
+		const float y1 = static_cast<float>(r.y1());
+		const float x2 = static_cast<float>(r.x2());
+		const float y2 = static_cast<float>(r.y2());
+
+		std::vector<KRE::vertex_color> vcarray;
+		vcarray.emplace_back(glm::vec2(x1, y1), c);
+		vcarray.emplace_back(glm::vec2(x1, y2), c);
+		vcarray.emplace_back(glm::vec2(x2, y1), c);
+		vcarray.emplace_back(glm::vec2(x2, y2), c);
+		attribs_->addMultiDraw(&vcarray);
+	}
+	void init() 
+	{
+		addRect(rect(100, 100, 50, 50), KRE::Color::colorPalevioletred());
+		addRect(rect(150, 100, 50, 50), KRE::Color::colorRed());
+		addRect(rect(100, 150, 50, 50), KRE::Color::colorGreen());
+		addRect(rect(150, 150, 50, 50), KRE::Color::colorBlue());
+	}
+private:
+	std::shared_ptr<KRE::Attribute<KRE::vertex_color>> attribs_;
+};
+
+// XXX convert this to a helper class
+KRE::SceneObjectPtr text_block_renderer(const std::vector<std::string>& strs, const std::vector<KRE::Color>& colors, float* ts_x, float* ts_y)
+{
+	static std::vector<std::string> ff;
+	if(ff.empty()) {
+		ff.emplace_back("SourceCodePro-Regular");
+		ff.emplace_back("square");
+		ff.emplace_back("whitrabt");
+		ff.emplace_back("monospace");
+	}
+
+	static DeviceMetrics dm;
+	
+	static const int font_size = 10;
+	static const float fs = static_cast<float>(font_size * dm.getDpiY()) / 72.0f;
+	static auto fh = KRE::FontDriver::getFontHandle(ff, fs);
+	int y = static_cast<int>(fh->getScaleFactor() * fs);
+
+	if(ts_x != nullptr) {
+		*ts_x = static_cast<float>(fh->calculateCharAdvance('x') / 65536.0f);
+	}
+	if(ts_y != nullptr) {
+		*ts_y = fs;
+	}
+
+	std::vector<point> final_path;
+	std::string concat_op;
+	for(auto& op : strs) {
+		auto glyph_path = fh->getGlyphPath(op);
+		for(auto it = glyph_path.begin(); it != glyph_path.end()-1; ++it) {
+			auto& gp = *it;
+			final_path.emplace_back(gp.x, gp.y + y);
+		}
+		concat_op += op;
+		y += static_cast<int>(fh->getScaleFactor() * fs);
+	}
+	return fh->createColoredRenderableFromPath(nullptr, concat_op, final_path, colors);
+}
+
 int main(int argc, char* argv[])
 {
 	std::vector<std::string> args;
@@ -315,6 +410,8 @@ int main(int argc, char* argv[])
 	read_system_fonts(&font_files);
 	FontDriver::setAvailableFonts(font_files);
 	FontDriver::setFontProvider("stb");
+
+	terrain::terrain::load_terrain_data(json::parse_from_file("../data/terrain.cfg"));
 
 	WindowManager wm("SDL");
 
@@ -379,10 +476,25 @@ int main(int argc, char* argv[])
 	//	std::cout << "    " << line << "\n";
 	//}
 
-	//SDL_Event e;
+	auto visibility_test = std::make_shared<AMVisibility>(std::bind(&mercy::BaseMap::blocksLight, eng->getMap().get(), std::placeholders::_1, std::placeholders::_2),
+		std::bind(&mercy::BaseMap::setVisible, eng->getMap().get(), std::placeholders::_1, std::placeholders::_2),
+		std::bind(&mercy::BaseMap::getDistance, eng->getMap().get(), std::placeholders::_1, std::placeholders::_2));
+
+	{
+		profile::manager pman("visibility_test");
+		visibility_test->Compute(point(map_width/2, map_height/2), 3);
+	}
+
+	SDL_Event e;
 	bool running = true;
 	Uint32 last_tick_time = SDL_GetTicks();
 	while(running) {
+		SDL_PumpEvents();
+		int numevts = SDL_PeepEvents(&e, 1, SDL_PEEKEVENT, SDL_KEYDOWN, SDL_KEYUP);
+		if(numevts > 0) {
+			if(e.type == SDL_KEYDOWN && e.key.keysym.scancode == SDL_SCANCODE_P) {
+			}
+		}
 		/*while(SDL_PollEvent(&e)) {
 			// XXX we need to add some keyboard/mouse callback handling here for "doc".
 			if(e.type == SDL_KEYUP && e.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
