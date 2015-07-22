@@ -72,28 +72,22 @@ namespace KRE
 	};
 	typedef std::shared_ptr<FontRenderable> FontRenderablePtr;
 
-	struct font_colored_coord
-	{
-		font_colored_coord(const glm::vec2& v, const glm::vec2& t, const glm::u8vec4& c) : vtx(v), tc(t), color(c) {}
-		glm::vec2 vtx;
-		glm::vec2 tc;
-		glm::u8vec4 color;
-	};
-
 	class ColoredFontRenderable : public SceneObject
 	{
 	public:
 		ColoredFontRenderable();
 		void clear();
-		void update(std::vector<font_colored_coord>* queue);
+		void update(std::vector<font_coord>* queue);
 		int getWidth() const { return width_; }
 		int getHeight() const { return height_; }
 		void setWidth(int width) { width_ = width; }
 		void setHeight(int height) { height_ = height; }
 		void setColorPointer(const ColorPtr& color);
 		void preRender(const WindowPtr& wnd);
+		void updateColors(std::vector<glm::u8vec4>* colors);
 	private:
-		std::shared_ptr<Attribute<font_colored_coord>> attribs_;
+		std::shared_ptr<Attribute<font_coord>> attribs_;
+		std::shared_ptr<Attribute<glm::u8vec4>> color_attrib_;
 		// intrinsic width and height when rendered, in pixels.
 		int width_;
 		int height_;

@@ -47,8 +47,13 @@ double get_mouse_scale_factor()
 engine::engine(const KRE::WindowPtr& wnd)
 	: state_(EngineState::PLAY),
 	  turns_(1),
+	  camera_(),
 	  wnd_(wnd),
-	  entity_quads_(0, rect(0,0,100,100))
+	  entity_list_(),
+	  entity_quads_(0, rect(0,0,100,100)),
+	  process_list_(),
+	  map_(),
+	  game_area_(0, 0, wnd->width(), wnd->height())
 {
 }
 
@@ -224,4 +229,28 @@ void engine::inc_turns(int cnt)
 void engine::setMap(const mercy::BaseMapPtr& map) 
 {
 	map_ = map; 
+}
+
+void engine::set_camera(const point& cam)
+{ 
+	// default to position for infinite map.
+	camera_.x = cam.x * map_->getTileSize().x;
+	camera_.y = cam.y * map_->getTileSize().y;
+
+	if(map_) {
+		if(map_->isFixedSize()) {
+			const float map_pixel_width = map_->getWidth() * map_->getTileSize().x;
+			const float map_pixel_height = map_->getHeight() * map_->getTileSize().y;
+			if(map_pixel_width > getGameArea().w()) {
+				if(camera_.x < (map_pixel_width - getGameArea().w())) {
+					camera_.x = getGameArea().w() / 2;
+				} else if(map_pixel_width - camera_.x > (map_pixel_width - getGameArea().w())) {
+					camera_.x = map_pixel_width - getGameArea().w() / 2;
+				}
+			} else {
+				camera_.x = getGameArea().mid_x();
+				camera_.y = getGameArea().mid_y();
+			}
+		}
+	}
 }

@@ -251,11 +251,15 @@ namespace KRE
 		ShaderProgramPtr shader = ShaderProgram::getProgram("font_shader");
 		setShader(shader);
 		auto as = DisplayDevice::createAttributeSet();
-		attribs_.reset(new Attribute<font_colored_coord>(AccessFreqHint::DYNAMIC, AccessTypeHint::DRAW));
-		attribs_->addAttributeDesc(AttributeDesc(AttrType::POSITION, 2, AttrFormat::FLOAT, false, sizeof(font_colored_coord), offsetof(font_colored_coord, vtx)));
-		attribs_->addAttributeDesc(AttributeDesc(AttrType::TEXTURE,  2, AttrFormat::FLOAT, false, sizeof(font_colored_coord), offsetof(font_colored_coord, tc)));
-		attribs_->addAttributeDesc(AttributeDesc(AttrType::COLOR,  4, AttrFormat::UNSIGNED_BYTE, true, sizeof(font_colored_coord), offsetof(font_colored_coord, color)));
-		as->addAttribute(AttributeBasePtr(attribs_));
+		attribs_.reset(new Attribute<font_coord>(AccessFreqHint::STATIC, AccessTypeHint::DRAW));
+		attribs_->addAttributeDesc(AttributeDesc(AttrType::POSITION, 2, AttrFormat::FLOAT, false, sizeof(font_coord), offsetof(font_coord, vtx)));
+		attribs_->addAttributeDesc(AttributeDesc(AttrType::TEXTURE,  2, AttrFormat::FLOAT, false, sizeof(font_coord), offsetof(font_coord, tc)));
+		as->addAttribute(attribs_);
+
+		color_attrib_.reset(new Attribute<glm::u8vec4>(AccessFreqHint::DYNAMIC, AccessTypeHint::DRAW));
+		color_attrib_->addAttributeDesc(AttributeDesc(AttrType::COLOR,  4, AttrFormat::UNSIGNED_BYTE, true));
+		as->addAttribute(color_attrib_);
+
 		as->setDrawMode(DrawMode::TRIANGLES);
 		as->clearblendState();
 		as->clearBlendMode();
@@ -282,9 +286,14 @@ namespace KRE
 		color_ = color;
 	}
 
-	void ColoredFontRenderable::update(std::vector<font_colored_coord>* queue)
+	void ColoredFontRenderable::update(std::vector<font_coord>* queue)
 	{
 		attribs_->update(queue, attribs_->end());
+	}
+
+	void ColoredFontRenderable::updateColors(std::vector<glm::u8vec4>* colors)
+	{
+		color_attrib_->update(colors);
 	}
 
 	void ColoredFontRenderable::clear()

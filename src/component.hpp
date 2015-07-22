@@ -98,10 +98,11 @@ namespace component
 
 	struct stats : public component
 	{
-		stats() : component(Component::STATS), health(1), attack(0), armour(0) {}
+		stats() : component(Component::STATS), health(1), attack(0), armour(0), visible_radius(5), name() {}
 		int health;
 		int attack;
 		int armour;
+		int visible_radius;
 		std::string name;
 	};
 

@@ -275,8 +275,10 @@ namespace KRE
 			int height = font_renderable->getHeight();
 			int max_height = 0;
 
-			std::vector<font_colored_coord> coords;
+			std::vector<font_coord> coords;
+			std::vector<glm::u8vec4> carray;
 			coords.reserve(glyphs_in_text * 6);
+			carray.reserve(glyphs_in_text * 6);
 			int n = 0;
 			for(char32_t cp : cp_string) {
 				ASSERT_LOG(n < static_cast<int>(path.size()), "Insufficient points were supplied to create a path from the string '" << text << "'");
@@ -305,13 +307,16 @@ namespace KRE
 				const float x2 = x1 + b->xoff2 - b->xoff;
 				const float y2 = static_cast<float>(pt.y) / 65536.0f + b->yoff2;
 				const auto color = colors[n].as_u8vec4();
-				coords.emplace_back(glm::vec2(x1, y2), glm::vec2(u1, v2), color);
-				coords.emplace_back(glm::vec2(x1, y1), glm::vec2(u1, v1), color);
-				coords.emplace_back(glm::vec2(x2, y1), glm::vec2(u2, v1), color);
+				for(int col_cnt = 0; col_cnt != 6; ++col_cnt) {
+					carray.emplace_back(color);
+				}
+				coords.emplace_back(glm::vec2(x1, y2), glm::vec2(u1, v2));
+				coords.emplace_back(glm::vec2(x1, y1), glm::vec2(u1, v1));
+				coords.emplace_back(glm::vec2(x2, y1), glm::vec2(u2, v1));
 
-				coords.emplace_back(glm::vec2(x2, y1), glm::vec2(u2, v1), color);
-				coords.emplace_back(glm::vec2(x1, y2), glm::vec2(u1, v2), color);
-				coords.emplace_back(glm::vec2(x2, y2), glm::vec2(u2, v2), color);
+				coords.emplace_back(glm::vec2(x2, y1), glm::vec2(u2, v1));
+				coords.emplace_back(glm::vec2(x1, y2), glm::vec2(u1, v2));
+				coords.emplace_back(glm::vec2(x2, y2), glm::vec2(u2, v2));
 				++n;
 			}
 			height += max_height;
@@ -320,6 +325,7 @@ namespace KRE
 			font_renderable->setWidth(width);
 			font_renderable->setHeight(height);
 			font_renderable->update(&coords);
+			font_renderable->updateColors(&carray);
 			return font_renderable;
 		}
 

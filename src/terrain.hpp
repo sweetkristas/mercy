@@ -100,7 +100,7 @@ namespace terrain
 		terrain_tile_ptr get_tile_at(const point& p);
 
 		static void load_terrain_data(const variant& n);
-		static point get_terrain_size();
+		static pointf get_terrain_size();
 		//variant write();
 	private:
 		int chunk_size_w_;

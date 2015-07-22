@@ -260,8 +260,11 @@ private:
 	int dpi_y_;
 };
 
-void create_player(engine& e, const point& start)
+void create_player(engine& e)
 {
+	ASSERT_LOG(e.getMap() != nullptr, "Please add map before creating player.");
+	auto& map = e.getMap();
+
 	component_set_ptr player = std::make_shared<component::component_set>(100);
 	// Player component simply acts as a tag for the entity
 	//font::font_ptr fnt = font::get_font("SourceCodePro-Regular.ttf", 20);
@@ -271,10 +274,13 @@ void create_player(engine& e, const point& start)
 	player->mask |= component::genmask(component::Component::INPUT);
 	player->mask |= component::genmask(component::Component::SPRITE);
 	player->mask |= component::genmask(component::Component::COLLISION);
-	player->pos = std::make_shared<component::position>(start);
+	player->pos = std::make_shared<component::position>(map->getStartLocation());
 	e.set_camera(player->pos->pos);
 	player->stat = std::make_shared<component::stats>();
 	player->stat->health = 10;
+	player->stat->visible_radius = 5;
+	player->stat->armour = 0;
+	player->stat->attack = 1;
 	player->inp = std::make_shared<component::input>();
 	//auto surf = std::make_shared<graphics::surface>(font::render_shaded("@", fnt, graphics::color(255,255,255), graphics::color(255,0,0)));
 	//auto surf = std::make_shared<graphics::surface>("images/spritely_fellow.png");
@@ -287,8 +293,10 @@ void create_player(engine& e, const point& start)
 	auto glyph_path = fh->getGlyphPath("@");
 	auto spr = fh->createRenderableFromPath(nullptr, "@", glyph_path);
 	player->spr = std::make_shared<component::sprite>(spr);
-	spr->setPosition(start.x, start.y);
 	e.add_entity(player);
+	
+	spr->setPosition(map->getStartLocation().x * map->getTileSize().x, map->getStartLocation().y * map->getTileSize().y);
+	map->updatePlayerVisibility(player->pos->pos, player->stat->visible_radius);
 }
 
 class TestRenderable : public KRE::SceneObject
@@ -469,20 +477,17 @@ int main(int argc, char* argv[])
 	features.add("dpi_y", dm.getDpiY());
 	eng->setMap(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
 
-	create_player(*eng, point(map_width/2, map_height/2));
+	create_player(*eng);
 
 	//auto cave_test = mercy::cave_fixed_param(80, 50);
 	//for(auto& line : cave_test) {
 	//	std::cout << "    " << line << "\n";
 	//}
 
-	auto visibility_test = std::make_shared<AMVisibility>(std::bind(&mercy::BaseMap::blocksLight, eng->getMap().get(), std::placeholders::_1, std::placeholders::_2),
-		std::bind(&mercy::BaseMap::setVisible, eng->getMap().get(), std::placeholders::_1, std::placeholders::_2),
-		std::bind(&mercy::BaseMap::getDistance, eng->getMap().get(), std::placeholders::_1, std::placeholders::_2));
-
-	{
-		profile::manager pman("visibility_test");
-		visibility_test->Compute(point(map_width/2, map_height/2), 3);
+	terrain::terrain terra_firma;
+	auto chks = terra_firma.get_chunks_in_area(rect(0, 0, 80, 50));
+	for(auto& chk : chks) {
+		root->attachObject(chk->get_renderable());
 	}
 
 	SDL_Event e;
@@ -543,11 +548,12 @@ int main(int argc, char* argv[])
 			style_tree->process(dt);
 		}
 		scene->process(dt);
+
 		running = eng->update(dt);
 		last_tick_time = current_tick_time;
 
-		//scene->renderScene(rman);
-		//rman->render(main_wnd);
+		scene->renderScene(rman);
+		rman->render(main_wnd);
 
 		if(scene_tree != nullptr) {
 			scene_tree->preRender(main_wnd);

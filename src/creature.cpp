@@ -34,7 +34,19 @@ namespace creature
 		class creature
 		{
 		public:
-			creature(const variant& n) : component_mask_(0) {
+			explicit creature(const variant& n) 
+				: name_(),
+				  health_min_(1),
+				  health_max_(5),
+				  attack_min_(0),
+				  attack_max_(0),
+				  armour_(0),
+				  visible_radius_(5),
+				  ai_name_(),
+				  sprite_name_(),
+				  sprite_area_(),
+				  component_mask_(0) 
+			{
 				using namespace component;
 				ASSERT_LOG(n.is_map(), "Creature definitions must be maps");
 				ASSERT_LOG(n.has_key("name"), "Must supply a 'name' attribute for the creature.");
@@ -52,11 +64,11 @@ namespace creature
 					const variant& stats = n["stats"];
 					ASSERT_LOG(stats.has_key("health"), "Must supply a 'health' attribute for the creature " << name_);
 					if(stats["health"].is_int()) {
-						health_min_ = health_max_ = static_cast<int>(stats["health"].as_int());
+						health_min_ = health_max_ = stats["health"].as_int32();
 					} else if(stats["health"].is_list()) {
 						ASSERT_LOG(stats["health"].num_elements() == 2, "'health' attribute for creature wasn't a list of two integers " << name_);
-						health_min_ = static_cast<int>(stats["health"][0].as_int());
-						health_max_ = static_cast<int>(stats["health"][1].as_int());
+						health_min_ = stats["health"][0].as_int32();
+						health_max_ = stats["health"][1].as_int32();
 						if(health_min_ > health_max_) {
 							std::swap(health_min_, health_max_);
 						}
@@ -65,18 +77,20 @@ namespace creature
 
 					ASSERT_LOG(stats.has_key("attack"), "Must supply a 'attack' attribute for the creature " << name_);
 					if(stats["attack"].is_int()) {
-						attack_min_ = attack_max_ = static_cast<int>(stats["attack"].as_int());
+						attack_min_ = attack_max_ = stats["attack"].as_int32();
 					} else if(stats["attack"].is_list()) {
 						ASSERT_LOG(stats["attack"].num_elements() == 2, "'attack' attribute for creature wasn't a list of two integers. " << name_);
-						attack_min_ = static_cast<int>(stats["attack"][0].as_int());
-						attack_max_ = static_cast<int>(stats["attack"][1].as_int());
+						attack_min_ = stats["attack"][0].as_int32();
+						attack_max_ = stats["attack"][1].as_int32();
 						if(attack_min_ > attack_max_) {
 							std::swap(attack_min_, attack_max_);
 						}
 					}
 					ASSERT_LOG(attack_min_ > 0 && attack_max_ > 0, "Attack min/max must be greater than zero: " << attack_min_ << " : " << attack_max_ << " for creature " << name_);
 					
-					armour_ = stats.has_key("armour") ? static_cast<int>(stats["armour"].as_int()) : 0;
+					armour_ = stats.has_key("armour") ? stats["armour"].as_int32() : 0;
+
+					visible_radius_ = stats.has_key("sight_radius") ? stats["sight_radius"].as_int32() : 5;
 				}
 
 				if((component_mask_ & genmask(Component::AI)) == genmask(Component::AI)) {
@@ -90,10 +104,10 @@ namespace creature
 					sprite_name_ = n["sprite"].as_string();
 					if(n.has_key("area")) {
 						ASSERT_LOG(n["area"].is_list() && n["area"].num_elements() == 4, "'area' attribute for creature " << name_ << " must be list of four integers (x1,y1,x2,y2). " << n["area"].type_as_string());
-						sprite_area_ = rect::from_coordinates(static_cast<int>(n["area"][0].as_int()),
-							static_cast<int>(n["area"][1].as_int()),
-							static_cast<int>(n["area"][2].as_int()),
-							static_cast<int>(n["area"][3].as_int()));
+						sprite_area_ = rect::from_coordinates(n["area"][0].as_int32(),
+							n["area"][1].as_int32(),
+							n["area"][2].as_int32(),
+							n["area"][3].as_int32());
 					}
 				}
 			}
@@ -108,6 +122,7 @@ namespace creature
 					res->stat->attack = generator::get_uniform_int(attack_min_, attack_max_);
 					res->stat->armour = armour_;
 					res->stat->name = name_;
+					res->stat->visible_radius = visible_radius_;
 				}
 				if((component_mask_ & genmask(Component::POSITION)) == genmask(Component::POSITION)) {
 					res->pos = std::make_shared<position>(pos);
@@ -139,6 +154,7 @@ namespace creature
 			int attack_min_;
 			int attack_max_;
 			int armour_;
+			int visible_radius_;
 			// attack type (magic, physical, type of magic, type of physical, etc)
 			// has ranged attack
 			// what items might be carried.
@@ -147,7 +163,7 @@ namespace creature
 			std::string sprite_name_;
 			rect sprite_area_;
 			component_id component_mask_;
-			creature();
+			creature() = delete;
 		};
 		typedef std::shared_ptr<creature> creature_ptr;
 

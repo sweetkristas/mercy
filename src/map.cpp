@@ -38,6 +38,7 @@ namespace mercy
 {
 	namespace
 	{
+		// XX move these and symbols to external file.
 		enum class DungeonTile {
 			ceiling,
 			floor,
@@ -54,8 +55,11 @@ namespace mercy
 		public:
 			DungeonMap(int width, int height, const variant& features)
 				: BaseMap(width, height),
+				  tiles_(),
 				  dpi_x_(96),
-				  dpi_y_(96)
+				  dpi_y_(96),
+				  renderable_(nullptr),
+				  start_location_()
 			{
 				if(features.has_key("dpi_x")) {
 					dpi_x_ = features["dpi_x"].as_int32();
@@ -64,32 +68,70 @@ namespace mercy
 					dpi_y_ = features["dpi_y"].as_int32();
 				}
 				generate();
+			}			
+			KRE::SceneObjectPtr getRenderable() override
+			{
+				// XXX we need to use an update procedure somewhere
+				if(renderable_ == nullptr || recreate_renderable_) {
+					recreate_renderable_ = false;
+					renderable_ = createRenderable();
+				}
+				return renderable_;
 			}
-			KRE::SceneObjectPtr createRenderable() override
+			KRE::SceneObjectPtr createRenderable()
 			{
 				profile::manager pman("DungeonMap::createRenderable");
 				std::vector<KRE::Color> colors;
 
 				std::vector<std::string> transformed_output;
-				for(auto& row : output_) {
+				for(auto& row : tiles_) {
 					std::string txf_row;
+					KRE::Color color;
 					for(auto& col : row) {
-						if(col == '#') {
-							txf_row += '#';
-							colors.emplace_back(KRE::Color::colorDarkslategrey());
-						} else if(col == ' ') {
-							txf_row += ' ';
-							colors.emplace_back(KRE::Color::colorWhite());
-						} else if(col == '.') {
-							txf_row += utils::codepoint_to_utf8(0xb7);
-							colors.emplace_back(KRE::Color::colorSaddlebrown());
-						} else if(col == '+') {
-							txf_row += '+';
-							colors.emplace_back(KRE::Color::colorRed());
-						} else {
-							txf_row += col;
-							colors.emplace_back(KRE::Color::colorWhite());
+						switch(col.type) {
+							case DungeonTile::ceiling:
+								txf_row += ' ';
+								break;
+							case DungeonTile::floor:
+								txf_row += utils::codepoint_to_utf8(0xb7);
+								color = KRE::Color::colorSaddlebrown();
+								break;
+							case DungeonTile::wall:
+								txf_row += '#';
+								color = KRE::Color::colorDarkslategrey();
+								break;
+							case DungeonTile::door:
+								txf_row += 'D';
+								color = KRE::Color::colorBrown();
+								break;
+							case DungeonTile::pit:
+								txf_row += 'X';
+								color = KRE::Color::colorBlack();
+								break;
+							case DungeonTile::lava:
+								txf_row += '~';
+								color = KRE::Color::colorOrange();
+								break;
+							case DungeonTile::water:
+								txf_row += '~';
+								color = KRE::Color::colorBlue();
+								break;
+							case DungeonTile::perimeter:
+								txf_row += '+';
+								color = KRE::Color::colorRed();
+								break;
+							default: 
+								txf_row += '?';
+								break;
 						}
+						if(col.visibility & 1) {
+							color.setAlpha(255);
+						} else if(col.visibility & 2) {
+							color.setAlpha(128);
+						} else {
+							color.setAlpha(0);
+						}
+						colors.emplace_back(color);
 					}
 					transformed_output.emplace_back(txf_row);
 				}
@@ -141,32 +183,32 @@ namespace mercy
 					}
 				}
 
-				output_.clear();
-				output_.resize(map_height);
-				for(auto& op : output_) {
-					op.resize(map_width, ' ');
+				tiles_.clear();
+				tiles_.resize(map_height);
+				for(auto& t : tiles_) {
+					t.resize(map_width, TileInfo(DungeonTile::ceiling));
 				}
 				for(int x = 0; x != map_width; ++x) { 
-					output_[0][x] = '+';
-					output_[map_height-1][x] = '+';
+					tiles_[0][x].type = DungeonTile::perimeter;
+					tiles_[map_height-1][x].type = DungeonTile::perimeter;
 				}
 				for(int y = 0;y != map_height; ++y) { 
-					output_[y][0] = '+';
-					output_[y][map_width-1] = '+';
+					tiles_[y][0] = DungeonTile::perimeter;
+					tiles_[y][map_width-1] = DungeonTile::perimeter;
 				}
 				for(auto& room : rooms) {
 					for(int x = room.x1(); x <= room.x2()-1; ++x) {
-						output_[room.y1()][x] = '#';
-						output_[room.y2()-1][x] = '#';
+						tiles_[room.y1()][x].type = DungeonTile::wall;
+						tiles_[room.y2()-1][x].type = DungeonTile::wall;
 					}
 					for(int y = room.y1()+1; y <= room.y2()-1; ++y) {
-						output_[y][room.x1()] = '#';
-						output_[y][room.x2()-1] = '#';
+						tiles_[y][room.x1()].type = DungeonTile::wall;
+						tiles_[y][room.x2()-1].type = DungeonTile::wall;
 					}
 
 					for(int y = room.y1()+1; y < room.y2()-1; ++y) {
 						for(int x = room.x1()+1; x < room.x2()-1; ++x) {
-							output_[y][x] = '.';
+							tiles_[y][x].type = DungeonTile::floor;
 						}
 					}
 				}
@@ -190,16 +232,16 @@ namespace mercy
 									const int start_y = r1.y1()+1;
 									const int end_y = std::min(r2.y2(), r1.y2())-1;
 									for(int y = start_y; y < end_y; ++y) {
-										output_[y][r1.x2()-1] = '.';
-										output_[y][r2.x1()] = '.';
+										tiles_[y][r1.x2()-1].type = DungeonTile::floor;
+										tiles_[y][r2.x1()].type = DungeonTile::floor;
 										is_connected = true;
 									}
 								} else if(r1.y2() >= r2.y1() && r1.y1() <= r2.y2()) {
 									const int start_y = std::max(r1.y1(), r2.y1())+1;
 									const int end_y = std::min(r1.y2(),r2.y2())-1;
 									for(int y = start_y; y < end_y; ++y) {
-										output_[y][r1.x2()-1] = '.';
-										output_[y][r2.x1()] = '.';
+										tiles_[y][r1.x2()-1].type = DungeonTile::floor;
+										tiles_[y][r2.x1()].type = DungeonTile::floor;
 										is_connected = true;
 									}
 								}
@@ -208,16 +250,16 @@ namespace mercy
 									const int start_x = r1.x1()+1;
 									const int end_x = std::min(r2.x2(), r1.x2())-1;
 									for(int x = start_x; x < end_x; ++x) {
-										output_[r1.y2()-1][x] = '.';
-										output_[r2.y1()][x] = '.';
+										tiles_[r1.y2()-1][x].type = DungeonTile::floor;
+										tiles_[r2.y1()][x].type = DungeonTile::floor;
 										is_connected = true;
 									}
 								} else if(r1.x2() >= r2.x1() && r1.x1() <= r2.x2()) {
 									const int start_x = std::max(r1.x1(), r2.x1())+1;
 									const int end_x = std::min(r1.x2(),r2.x2())-1;
 									for(int x = start_x; x < end_x; ++x) {
-										output_[r1.y2()-1][x] = '.';
-										output_[r2.y1()][x] = '.';
+										tiles_[r1.y2()-1][x].type = DungeonTile::floor;
+										tiles_[r2.y1()][x].type = DungeonTile::floor;
 										is_connected = true;
 									}
 								}
@@ -255,104 +297,145 @@ namespace mercy
 						const int start_y = p1.x < p2.x ? p1.y : p2.y;
 						const int end_y   = p1.x < p2.x ? p2.y : p1.y;
 						for(int x = start_x; x != end_x; ++x) {
-							if(output_[start_y][x] == ' ') {
-								output_[start_y][x] = '.';
-							} else if(output_[start_y][x] == '#') {
-								output_[start_y][x] = '.';
+							if(tiles_[start_y][x].type == DungeonTile::ceiling) {
+								tiles_[start_y][x].type = DungeonTile::floor;
+							} else if(tiles_[start_y][x].type == DungeonTile::wall) {
+								tiles_[start_y][x].type = DungeonTile::floor;
 							}
 
-							if(output_[start_y-1][x] == ' ') {
-								output_[start_y-1][x] = '#';
+							if(tiles_[start_y-1][x].type == DungeonTile::ceiling) {
+								tiles_[start_y-1][x].type = DungeonTile::wall;
 							} 
-							if(output_[start_y+1][x] == ' ') {
-								output_[start_y+1][x] = '#';
+							if(tiles_[start_y+1][x].type == DungeonTile::ceiling) {
+								tiles_[start_y+1][x].type = DungeonTile::wall;
 							}
 						}
-						if(output_[start_y-1][end_x] == ' ') {
-							output_[start_y-1][end_x] = '#';
+						if(tiles_[start_y-1][end_x].type == DungeonTile::ceiling) {
+							tiles_[start_y-1][end_x].type = DungeonTile::wall;
 						} 
-						if(output_[start_y+1][end_x] == ' ') {
-							output_[start_y+1][end_x] = '#';
+						if(tiles_[start_y+1][end_x].type == DungeonTile::ceiling) {
+							tiles_[start_y+1][end_x].type = DungeonTile::wall;
 						}
 						if(end_x+1 < map_width) {
-							if(output_[start_y-1][end_x+1] == ' ') {
-								output_[start_y-1][end_x+1] = '#';
+							if(tiles_[start_y-1][end_x+1].type == DungeonTile::ceiling) {
+								tiles_[start_y-1][end_x+1].type = DungeonTile::wall;
 							} 
-							if(output_[start_y+1][end_x+1] == ' ') {
-								output_[start_y+1][end_x+1] = '#';
+							if(tiles_[start_y+1][end_x+1].type == DungeonTile::ceiling) {
+								tiles_[start_y+1][end_x+1].type = DungeonTile::wall;
 							}
 						}
 
 						const int y_incr  = start_y < end_y ? 1 : -1;
 						for(int y = start_y; y != end_y; y += y_incr) {
-							if(output_[y][end_x] == ' ') {
-								output_[y][end_x] = '.';
-							} else if(output_[y][end_x] == '#') {
-								output_[y][end_x] = '.';
+							if(tiles_[y][end_x].type == DungeonTile::ceiling) {
+								tiles_[y][end_x].type = DungeonTile::floor;
+							} else if(tiles_[y][end_x].type == DungeonTile::wall) {
+								tiles_[y][end_x].type = DungeonTile::floor;
 							}
-							if(output_[y][end_x-1] == ' ') {
-								output_[y][end_x-1] = '#';
+							if(tiles_[y][end_x-1].type == DungeonTile::ceiling) {
+								tiles_[y][end_x-1].type = DungeonTile::wall;
 							} 
-							if(output_[y][end_x+1] == ' ') {
-								output_[y][end_x+1] = '#';
+							if(tiles_[y][end_x+1].type == DungeonTile::ceiling) {
+								tiles_[y][end_x+1].type = DungeonTile::wall;
 							}
 						}
-						if(output_[end_y][end_x-1] == ' ') {
-							output_[end_y][end_x-1] = '#';
+						if(tiles_[end_y][end_x-1].type == DungeonTile::ceiling) {
+							tiles_[end_y][end_x-1].type = DungeonTile::wall;
 						} 
-						if(output_[end_y][end_x+1] == ' ') {
-							output_[end_y][end_x+1] = '#';
+						if(tiles_[end_y][end_x+1].type == DungeonTile::ceiling) {
+							tiles_[end_y][end_x+1].type = DungeonTile::wall;
 						}
 					}
 				}
+
+				chooseStartLocation(rooms);
 
 				LOG_DEBUG("map size: " << map_width << "x" << map_height);
 				LOG_DEBUG("rooms built: " << rooms.size());
 				LOG_DEBUG("Number of rooms we tried to construct: " << num_rooms);
 			}
+			void chooseStartLocation(const std::vector<rect>& rooms)
+			{
+				//XXX there could be lots of ways to choose this really.
+				// choose a room/point on a particular side;
+				// choose the middle then search around for the nearest valid location.
+				// choose the room closet to the middle, etc.
+				// For now, we are going to take the centre of the first room on the list.
+				start_location_ = rooms.front().mid();
+			}
 			bool blocksLight(int x, int y) const override
 			{
-				if(x < 0 || y < 0 || y >= static_cast<int>(output_.size())) {
+				if(x < 0 || y < 0 || y >= static_cast<int>(tiles_.size())) {
 					return true;
 				}
-				if(x >= static_cast<int>(output_[y].size())) {
+				if(x >= static_cast<int>(tiles_[y].size())) {
 					return true;
 				}
-				char c = output_[y][x];
-				if(c == '.') {
+				auto& ti = tiles_[y][x];
+				if(ti.type == DungeonTile::floor || ti.type == DungeonTile::pit || ti.type == DungeonTile::lava) {
 					return false;
 				}
 				return true;
 			}
+			void clearVisible() override 
+			{
+				recreate_renderable_ = true;
+				for(auto& row : tiles_) {
+					for(auto& col : row) {
+						col.visibility &= ~(1 << 0);
+					}
+				}
+			}
 			void setVisible(int x, int y) override
 			{
-				LOG_DEBUG("Tile visible at: " << x << "," << y);
+				if(x < 0 || y < 0 || y >= static_cast<int>(tiles_.size()) || x >= static_cast<int>(tiles_[y].size())) {
+					return;
+				}
+				auto& ti = tiles_[y][x];
+				ti.visibility |= (1 << 0) | (1 << 1);
 			}
 			int getDistance(int x, int y) const override
 			{
 				//return x + y;	// Manhattan distance
 				return static_cast<int>(std::sqrt(static_cast<float>(x * x + y * y)));
 			}
+			bool isFixedSize() const override 
+			{
+				return true;
+			}
+			const point& getStartLocation() const
+			{
+				return start_location_;
+			}
 		private:
 			struct TileInfo {
+				// XXX: visibility should default to 0. Is 2 for testing.
+				TileInfo(DungeonTile t) : type(t), visibility(2) {}
 				DungeonTile type;
+				// XXX codify these with some constants.
 				// Visibility information.
 				//	bit 0 -- 1 if currently visible, 0 if can't be seen
 				//  bit 1 -- 1 if has been seen in the past, 0 if never been seen.
 				int visibility;
 			};
 			std::vector<std::vector<TileInfo>> tiles_;
-			std::vector<std::string> output_;
 			int dpi_x_;
 			int dpi_y_;
+			KRE::SceneObjectPtr renderable_;
+			bool recreate_renderable_ = false;
+			point start_location_;
 		};
 	}
 
 	BaseMap::BaseMap(int width, int height)
 		: width_(width),
 		  height_(height),
-		  tile_size_(0, 0)
+		  tile_size_(0, 0),
+		  visibility_(nullptr)
 	{
+		visibility_ = std::make_shared<AMVisibility>(std::bind(&BaseMap::blocksLight, this, std::placeholders::_1, std::placeholders::_2),
+			std::bind(&BaseMap::setVisible, this, std::placeholders::_1, std::placeholders::_2),
+			std::bind(&BaseMap::getDistance, this, std::placeholders::_1, std::placeholders::_2));
 	}
 
 	BaseMap::~BaseMap()
@@ -367,5 +450,10 @@ namespace mercy
 			ASSERT_LOG(false, "unrecognised map type to create.");
 		}
 		return nullptr;
+	}
+
+	void BaseMap::updatePlayerVisibility(const point& pos, int visible_radius)
+	{
+		visibility_->Compute(pos, visible_radius);
 	}
 }

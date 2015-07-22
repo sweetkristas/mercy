@@ -54,6 +54,9 @@ namespace process
 						e->pos->mov.clear();
 						if(e->is_player()) {
 							eng.set_camera(e->pos->pos);
+
+							eng.getMap()->clearVisible();
+							eng.getMap()->updatePlayerVisibility(e->pos->pos, e->stat->visible_radius);
 						}
 					}
 					break;

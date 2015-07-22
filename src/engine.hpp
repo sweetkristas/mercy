@@ -63,13 +63,15 @@ public:
 	int get_turns() const { return turns_; }
 	void inc_turns(int cnt = 1);
 
-	void set_camera(const point& cam) { camera_ = cam; }
-	const point& get_camera() { return camera_; }
+	void set_camera(const point& cam);
+	const pointf& get_camera() { return camera_; }
 
 	entity_list entities_in_area(const rect& r);
 
 	void setMap(const mercy::BaseMapPtr& map);
 	const mercy::BaseMapPtr& getMap() const { return map_; }
+
+	const rect& getGameArea() const { return game_area_; }
 
 	KRE::WindowPtr getWindow() const { return wnd_; }
 private:
@@ -78,10 +80,11 @@ private:
 	void populate_quadtree();
 	EngineState state_;
 	int turns_;
-	point camera_;
+	pointf camera_;
 	KRE::WindowPtr wnd_; 
 	entity_list entity_list_;
 	quadtree<component_set_ptr> entity_quads_;
 	std::vector<process::process_ptr> process_list_;
 	mercy::BaseMapPtr map_;
+	rect game_area_;
 };

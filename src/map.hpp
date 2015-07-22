@@ -27,6 +27,7 @@
 
 #include "SceneFwd.hpp"
 #include "variant.hpp"
+#include "visibility.hpp"
 
 namespace mercy
 {
@@ -41,18 +42,26 @@ namespace mercy
 		int getWidth() const { return width_; }
 		int getHeight() const { return height_; }
 		static BaseMapPtr create(const std::string& type, int width, int height, const variant& features);
-		virtual KRE::SceneObjectPtr createRenderable() = 0;
+		virtual KRE::SceneObjectPtr getRenderable() = 0;
 		virtual void generate() = 0;
 		const pointf& getTileSize() const { return tile_size_; }
 
+		virtual void clearVisible() = 0;
 		virtual bool blocksLight(int x, int y) const = 0;
 		virtual void setVisible(int x, int y) = 0;
 		virtual int getDistance(int x, int y) const = 0;
+
+		virtual bool isFixedSize() const = 0;
+
+		void updatePlayerVisibility(const point& pos, int visible_radius);
+
+		virtual const point& getStartLocation() const = 0;
 	protected:
 		void setTileSize(float x, float y) { tile_size_.x = x; tile_size_.y = y; }
 	private:
 		int width_;
 		int height_;
 		pointf tile_size_;
+		std::shared_ptr<Visibility> visibility_;
 	};
 }

@@ -49,8 +49,8 @@ namespace terrain
 			void sort_tiles() {
 				std::stable_sort(tiles_.begin(), tiles_.end());
 			}
-			const point& get_tile_size() const { return tile_size_; }
-			void set_tile_size(const point& p) { tile_size_ = p; }
+			const pointf& get_tile_size() const { return tile_size_; }
+			void set_tile_size(const pointf& p) { tile_size_ = p; }
 			terrain_tile_ptr get_tile_at_height(float value) const {
 				if(value >= tiles_.back()->get_threshold()) {
 					return tiles_.back();
@@ -116,7 +116,7 @@ namespace terrain
 				return tiles_[tt];
 			}
 		private:
-			point tile_size_;
+			pointf tile_size_;
 			std::vector<terrain_tile_ptr> tiles_;
 			// Map from name to terrain type for the tile.
 			std::map<std::string, TerrainType> tile_name_map_;
@@ -193,7 +193,7 @@ namespace terrain
 		}
 		
 		auto r = text_block_renderer(op, colors, &ts_x, &ts_y);
-
+		get_terrain_data().set_tile_size(pointf(ts_x, ts_y));
 		return r;
 	}
 
@@ -319,7 +319,7 @@ namespace terrain
 		return nchunk;
 	}
 
-	point terrain::get_terrain_size()
+	pointf terrain::get_terrain_size()
 	{
 		return get_terrain_data().get_tile_size();
 	}

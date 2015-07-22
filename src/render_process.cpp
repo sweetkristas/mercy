@@ -41,7 +41,7 @@ namespace process
 		using namespace component;
 		static component_id render_mask = genmask(Component::SPRITE) | genmask(Component::POSITION);
 
-		const point& cam = eng.get_camera();
+		const pointf& cam = eng.get_camera();
 		const KRE::WindowPtr wnd = eng.getWindow();
 		const point screen_centre(wnd->width() / 2, wnd->height() / 2);
 		const mercy::BaseMapPtr& rmap = eng.getMap();
@@ -49,7 +49,7 @@ namespace process
 
 		// draw map
 		// XXX fix this to rmap->getRenderable();
-		static auto mapr = rmap->createRenderable();
+		auto mapr = rmap->getRenderable();
 		// XXX need to set map position offset by camera.
 		mapr->preRender(wnd);
 		wnd->render(mapr.get());
