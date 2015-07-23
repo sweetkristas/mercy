@@ -27,7 +27,7 @@
 
 #include "SceneFwd.hpp"
 #include "variant.hpp"
-#include "visibility.hpp"
+#include "visibility_fwd.hpp"
 
 namespace mercy
 {
@@ -50,6 +50,8 @@ namespace mercy
 		virtual bool blocksLight(int x, int y) const = 0;
 		virtual void setVisible(int x, int y) = 0;
 		virtual int getDistance(int x, int y) const = 0;
+		
+		virtual bool isWalkable(int x, int y) const = 0;
 
 		virtual bool isFixedSize() const = 0;
 
@@ -62,6 +64,6 @@ namespace mercy
 		int width_;
 		int height_;
 		pointf tile_size_;
-		std::shared_ptr<Visibility> visibility_;
+		VisibilityPtr visibility_;
 	};
 }

@@ -7,6 +7,7 @@
 #include <functional>
 
 #include "geometry.hpp"
+#include "visibility_fwd.hpp"
 
 class Visibility
 {
@@ -159,7 +160,7 @@ private:
 					// case where the tile is clear and y == topY or y == bottomY. if y == topY then we have to make sure that
 					// the top vector is above the bottom-right corner of the inner square. if y == bottomY then we have to make
 					// sure that the bottom vector is below the top-left corner of the inner square
-					bool is_visible = is_opaque || ((y != top_y || top> Slope(y*4-1, x*4+1)) && (y != bottom_y || bottom < Slope(y*4+1, x*4-1)));
+					bool is_visible = is_opaque || ((y != top_y || top > Slope(y*4-1, x*4+1)) && (y != bottom_y || bottom < Slope(y*4+1, x*4-1)));
 					// NOTE: if you want the algorithm to be either fully or mostly symmetrical, replace the line above with the
 					// following line (and uncomment the Slope.LessOrEqual method). the line ensures that a clear tile is visible
 					// only if there's an unobstructed line to its center. if you want it to be fully symmetrical, also remove
@@ -180,7 +181,7 @@ private:
 								// we only have to check the tile above
 								int nx = x*2, ny = y*2+1; // top center by default
 								// NOTE: if you're using full symmetry and want more expansive walls (recommended), comment out the next line
-								if(blocksLight(x, y+1, octant, origin)) nx--; // top left if the corner is not beveled
+								//if(blocksLight(x, y+1, octant, origin)) nx--; // top left if the corner is not beveled
 								if(top > Slope(ny, nx)) { // we have to maintain the invariant that top > bottom, so the new sector
 									// created by adjusting the bottom is only valid if that's the case
 									// if we're at the bottom of the column, then just adjust the current sector rather than recursing
@@ -208,9 +209,9 @@ private:
 								// are clear. we know the tile below is clear because that's the current tile, so just check to the right
 								int nx = x*2, ny = y*2+1; // the bottom of the opaque tile (oy*2-1) equals the top of this tile (y*2+1)
 								// NOTE: if you're using full symmetry and want more expansive walls (recommended), comment out the next line
-								if(blocksLight(x+1, y+1, octant, origin)) {
-									++nx; // check the right of the opaque tile (y+1), not this one
-								}
+								//if(blocksLight(x+1, y+1, octant, origin)) {
+								//	++nx; // check the right of the opaque tile (y+1), not this one
+								//}
 								// we have to maintain the invariant that top > bottom. if not, the sector is empty and we're done
 								if(bottom >= Slope(ny, nx)) {
 									return;
@@ -271,4 +272,105 @@ private:
   std::function<bool(int, int)> blocks_light_;
   std::function<void(int, int)> set_visible_;
   std::function<int(int, int)> get_distance_;
+};
+
+class ShadowCastVisibility : public Visibility
+{
+public:
+	/// <param name="blocksLight">A function that accepts the X and Y coordinates of a tile and determines whether the
+	/// given tile blocks the passage of light. The function must be able to accept coordinates that are out of bounds.
+	/// </param>
+	/// <param name="setVisible">A function that sets a tile to be visible, given its X and Y coordinates. The function
+	/// must ignore coordinates that are out of bounds.
+	/// </param>
+	/// <param name="getDistance">A function that takes the X and Y coordinate of a point where X >= 0,
+	/// Y >= 0, and X >= Y, and returns the distance from the point to the origin.
+	/// </param>
+	ShadowCastVisibility(std::function<bool(int, int)> blocks_light, std::function<void(int, int)> set_visible, std::function<int(int, int)> get_distance)
+	{
+		blocks_light_ = blocks_light;
+		get_distance_  = get_distance;
+		set_visible_ = set_visible;
+	}
+
+	void Compute(const point& origin, int rangeLimit) override
+	{
+		set_visible_(origin.x, origin.y);
+		for(int octant = 0; octant < 8; octant++) {
+			Compute(octant, origin, rangeLimit, 1, Slope(1, 1), Slope(0, 1));
+		}
+	}
+
+private:
+	struct Slope // represents the slope Y/X as a rational number
+	{
+		Slope(int yy, int xx) : y(yy), x(xx) {}
+		int y, x;
+	};
+
+	void Compute(int octant, const point& origin, int rangeLimit, int x, Slope top, Slope bottom)
+	{
+		for(; x <= rangeLimit; x++) {// rangeLimit < 0 || x <= rangeLimit
+			// compute the Y coordinates where the top vector leaves the column (on the right) and where the bottom vector
+			// enters the column (on the left). this equals (x+0.5)*top+0.5 and (x-0.5)*bottom+0.5 respectively, which can
+			// be computed like (x+0.5)*top+0.5 = (2(x+0.5)*top+1)/2 = ((2x+1)*top+1)/2 to avoid floating point math
+			int top_y = top.x == 1 ? x : ((x * 2 + 1) * top.y + top.x - 1) / (top.x * 2); // the rounding is a bit tricky, though
+			int bottom_y = bottom.y == 0 ? 0 : ((x * 2 - 1) * bottom.y + bottom.x) / (bottom.x * 2);
+      
+			int wasOpaque = -1; // 0:false, 1:true, -1:not applicable
+			for(int y = top_y; y >= bottom_y; y--) {
+				int tx = origin.x, ty = origin.y;
+				switch(octant) { // translate local coordinates to map coordinates
+					case 0: tx += x; ty -= y; break;
+					case 1: tx += y; ty -= x; break;
+					case 2: tx -= y; ty -= x; break;
+					case 3: tx -= x; ty -= y; break;
+					case 4: tx -= x; ty += y; break;
+					case 5: tx -= y; ty += x; break;
+					case 6: tx += y; ty += x; break;
+					case 7: tx += x; ty += y; break;
+					default: break;
+				}
+
+				bool in_range = rangeLimit < 0 || get_distance_(x, y) <= rangeLimit;
+				if(in_range) {
+					set_visible_(tx, ty);
+				}
+				// NOTE: use the next line instead if you want the algorithm to be symmetrical
+				if(in_range && (y != top_y || top.y * x >= top.x * y) && (y != bottom_y || bottom.y * x <= bottom.x * y)) {
+					set_visible_(tx, ty);
+				}
+
+				bool isOpaque = !in_range || blocks_light_(tx, ty);
+				if(x != rangeLimit) {
+					if(isOpaque) {            
+					if(wasOpaque == 0) { // if we found a transition from clear to opaque, this sector is done in this column, so
+						// adjust the bottom vector upwards and continue processing it in the next column.
+						Slope newBottom(y * 2 + 1, x * 2 - 1); // (x*2-1, y*2+1) is a vector to the top-left of the opaque tile
+						if(!in_range || y == bottom_y) { 
+							// don't recurse unless we have to
+							bottom = newBottom; 
+							break; 
+						} else {
+							Compute(octant, origin, rangeLimit, x+1, top, newBottom);
+						}
+					}
+					wasOpaque = 1;
+				} else { // adjust top vector downwards and continue if we found a transition from opaque to clear
+					// (x*2+1, y*2+1) is the top-right corner of the clear tile (i.e. the bottom-right of the opaque tile)
+					if(wasOpaque > 0) {
+						top = Slope(y*2+1, x*2+1);
+					}
+					wasOpaque = 0;
+				}
+			}
+		}
+
+		if(wasOpaque != 0) break; // if the column ended in a clear tile, continue processing the current sector
+		}
+	}
+
+	std::function<bool(int, int)> blocks_light_;
+	std::function<void(int, int)> set_visible_;
+	std::function<int(int, int)> get_distance_;
 };

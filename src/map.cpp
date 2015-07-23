@@ -31,8 +31,9 @@
 #include "profile_timer.hpp"
 #include "random.hpp"
 #include "utf8_to_codepoint.hpp"
+#include "visibility.hpp"
 
-extern KRE::SceneObjectPtr text_block_renderer(const std::vector<std::string>& strs, const std::vector<KRE::Color>& colors, float* ts_x, float* ts_y);
+extern KRE::ColoredFontRenderablePtr text_block_renderer(const std::vector<std::string>& strs, const std::vector<KRE::Color>& colors, float* ts_x, float* ts_y);
 
 namespace mercy
 {
@@ -71,14 +72,61 @@ namespace mercy
 			}			
 			KRE::SceneObjectPtr getRenderable() override
 			{
-				// XXX we need to use an update procedure somewhere
-				if(renderable_ == nullptr || recreate_renderable_) {
+				if(renderable_ == nullptr) {
 					recreate_renderable_ = false;
 					renderable_ = createRenderable();
+				} else if(recreate_renderable_) {
+					recreate_renderable_ = false;
+					updateColors();
 				}
 				return renderable_;
 			}
-			KRE::SceneObjectPtr createRenderable()
+			void updateColors()
+			{
+				profile::manager pman("DungeonMap::updateColors");
+				std::vector<KRE::Color> colors;
+				for(auto& row : tiles_) {
+					KRE::Color color;
+					for(auto& col : row) {
+						switch(col.type) {
+							case DungeonTile::floor:
+								color = KRE::Color::colorSaddlebrown();
+								break;
+							case DungeonTile::wall:
+								color = KRE::Color::colorDarkslategrey();
+								break;
+							case DungeonTile::door:
+								color = KRE::Color::colorBrown();
+								break;
+							case DungeonTile::pit:
+								color = KRE::Color::colorBlack();
+								break;
+							case DungeonTile::lava:
+								color = KRE::Color::colorOrange();
+								break;
+							case DungeonTile::water:
+								color = KRE::Color::colorBlue();
+								break;
+							case DungeonTile::perimeter:
+								color = KRE::Color::colorRed();
+								break;
+							case DungeonTile::ceiling:
+							default:  
+								break;
+						}
+						if(col.visibility & 1) {
+							color.setAlpha(255);
+						} else if(col.visibility & 2) {
+							color.setAlpha(128);
+						} else {
+							color.setAlpha(0);
+						}
+						colors.emplace_back(color);
+					}
+				}
+				renderable_->updateColors(colors);
+			}
+			KRE::ColoredFontRenderablePtr createRenderable()
 			{
 				profile::manager pman("DungeonMap::createRenderable");
 				std::vector<KRE::Color> colors;
@@ -399,6 +447,17 @@ namespace mercy
 				//return x + y;	// Manhattan distance
 				return static_cast<int>(std::sqrt(static_cast<float>(x * x + y * y)));
 			}
+			bool isWalkable(int x, int y) const
+			{
+				if(x < 0 || y < 0 || y >= static_cast<int>(tiles_.size()) || x >= static_cast<int>(tiles_[y].size())) {
+					return false;
+				}
+				auto& ti = tiles_[y][x];
+				if(ti.type == DungeonTile::floor || ti.type == DungeonTile::pit || ti.type == DungeonTile::lava) {
+					return true;
+				}
+				return false;
+			}
 			bool isFixedSize() const override 
 			{
 				return true;
@@ -421,7 +480,7 @@ namespace mercy
 			std::vector<std::vector<TileInfo>> tiles_;
 			int dpi_x_;
 			int dpi_y_;
-			KRE::SceneObjectPtr renderable_;
+			KRE::ColoredFontRenderablePtr renderable_;
 			bool recreate_renderable_ = false;
 			point start_location_;
 		};
@@ -433,7 +492,7 @@ namespace mercy
 		  tile_size_(0, 0),
 		  visibility_(nullptr)
 	{
-		visibility_ = std::make_shared<AMVisibility>(std::bind(&BaseMap::blocksLight, this, std::placeholders::_1, std::placeholders::_2),
+		visibility_ = std::make_shared<ShadowCastVisibility>(std::bind(&BaseMap::blocksLight, this, std::placeholders::_1, std::placeholders::_2),
 			std::bind(&BaseMap::setVisible, this, std::placeholders::_1, std::placeholders::_2),
 			std::bind(&BaseMap::getDistance, this, std::placeholders::_1, std::placeholders::_2));
 	}
