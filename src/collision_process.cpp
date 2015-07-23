@@ -72,34 +72,19 @@ namespace process
 	{
 		using namespace component;
 		static component_id collision_mask = genmask(Component::COLLISION) | genmask(Component::POSITION);
-		static component_id  map_mask      = genmask(Component::COLLISION) | genmask(Component::MAP);
 		// O(n^2) collision testing is for the pro's :-/
 		// XXX Please make quad-tree or kd-tree for O(nlogn)
 		for(auto& e1 : elist) {
-			if((e1->mask & map_mask) == map_mask) {
-				//auto& e1map = e1->get()->map;
-				for(auto& e2 : elist) {
-					if(e1 == e2) {
-						continue;
-					}
-					if((e2->mask & (collision_mask | genmask(Component::MAP))) == collision_mask) {
-						//auto& e2pos = e2->pos;
-						// entity - map collision
-						//if(!is_passable(e1map->map[e2pos->p.y][e2pos->p.x])) {
-						//	e2pos->p = e2pos->last_p;
-						//}
-						//for(auto& exitp : e1map->exits) {
-						//	if(e2pos->p == exitp) {
-						//		if(e2->is_player()) {
-						//			// XXX do some exit logic, quitting the game for now
-						//			eng.set_state(EngineState::QUIT);
-						//		} else {
-						//			// don't let the non-player controlled entities leave via exit
-						//			e2pos->p = e2pos->last_p;
-						//		}
-						//	}
-						//}
-					} 
+			if((e1->mask & collision_mask) == collision_mask) {
+				auto& map = eng.getMap();
+				auto& pos = e1->pos->pos;
+				auto& mov = e1->pos->mov;
+
+				point new_pos = pos + mov; 
+
+				if(!map->isWalkable(new_pos.x, new_pos.y)) {
+					mov.x = 0;
+					mov.y = 0;
 				}
 			}
 		}
