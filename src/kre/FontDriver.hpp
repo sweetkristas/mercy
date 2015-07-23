@@ -84,7 +84,8 @@ namespace KRE
 		void setHeight(int height) { height_ = height; }
 		void setColorPointer(const ColorPtr& color);
 		void preRender(const WindowPtr& wnd);
-		void updateColors(std::vector<glm::u8vec4>* colors);
+		void updateColors(const std::vector<Color>& colors);
+		void setVerticesPerColor(int n) { vertices_per_color_ = n; }
 	private:
 		std::shared_ptr<Attribute<font_coord>> attribs_;
 		std::shared_ptr<Attribute<glm::u8vec4>> color_attrib_;
@@ -92,6 +93,7 @@ namespace KRE
 		int width_;
 		int height_;
 		ColorPtr color_;
+		int vertices_per_color_;
 	};
 	typedef std::shared_ptr<ColoredFontRenderable> ColoredFontRenderablePtr;
 

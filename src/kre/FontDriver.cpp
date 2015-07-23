@@ -200,9 +200,13 @@ namespace KRE
 	}
 
 	FontRenderable::FontRenderable() 
-		: SceneObject("font-renderable")
+		: SceneObject("font-renderable"),
+		  attribs_(nullptr),
+		  width_(0),
+		  height_(0),
+		  color_(nullptr)
 	{
-		ShaderProgramPtr shader = ShaderProgram::getProgram("font_shader");
+		ShaderProgramPtr shader = ShaderProgram::getProgram("font_shader")->clone();
 		setShader(shader);
 		auto as = DisplayDevice::createAttributeSet();
 		attribs_.reset(new Attribute<font_coord>(AccessFreqHint::DYNAMIC, AccessTypeHint::DRAW));
@@ -216,8 +220,10 @@ namespace KRE
 		addAttributeSet(as);
 
 		int u_ignore_alpha = shader->getUniform("ignore_alpha");
-		shader->setUniformDrawFunction([u_ignore_alpha](ShaderProgramPtr shader) {
+		int a_color_attr = shader->getAttribute("a_color");
+		shader->setUniformDrawFunction([u_ignore_alpha, a_color_attr](ShaderProgramPtr shader) {
 			shader->setUniformValue(u_ignore_alpha, 0);
+			shader->setAttributeValue(a_color_attr, glm::value_ptr(glm::u8vec4(255,255,255,255)));
 		});				
 	}
 
@@ -246,7 +252,13 @@ namespace KRE
 	}
 
 	ColoredFontRenderable::ColoredFontRenderable() 
-		: SceneObject("colored-font-renderable")
+		: SceneObject("colored-font-renderable"),
+		  attribs_(nullptr),
+		  color_attrib_(nullptr),
+		  width_(0),
+		  height_(0),
+		  color_(nullptr),
+		  vertices_per_color_(6)
 	{
 		ShaderProgramPtr shader = ShaderProgram::getProgram("font_shader");
 		setShader(shader);
@@ -291,9 +303,17 @@ namespace KRE
 		attribs_->update(queue, attribs_->end());
 	}
 
-	void ColoredFontRenderable::updateColors(std::vector<glm::u8vec4>* colors)
+	void ColoredFontRenderable::updateColors(const std::vector<Color>& colors)
 	{
-		color_attrib_->update(colors);
+		std::vector<glm::u8vec4> col;
+		col.reserve(vertices_per_color_ * colors.size());
+		for(auto& color : colors) {
+			auto c = color.as_u8vec4();
+			for(int n = 0; n != vertices_per_color_; ++n) {
+				col.emplace_back(c);
+			}
+		}
+		color_attrib_->update(&col);
 	}
 
 	void ColoredFontRenderable::clear()

@@ -276,9 +276,7 @@ namespace KRE
 			int max_height = 0;
 
 			std::vector<font_coord> coords;
-			std::vector<glm::u8vec4> carray;
 			coords.reserve(glyphs_in_text * 6);
-			carray.reserve(glyphs_in_text * 6);
 			int n = 0;
 			for(char32_t cp : cp_string) {
 				ASSERT_LOG(n < static_cast<int>(path.size()), "Insufficient points were supplied to create a path from the string '" << text << "'");
@@ -306,10 +304,6 @@ namespace KRE
 				const float y1 = static_cast<float>(pt.y) / 65536.0f + b->yoff;
 				const float x2 = x1 + b->xoff2 - b->xoff;
 				const float y2 = static_cast<float>(pt.y) / 65536.0f + b->yoff2;
-				const auto color = colors[n].as_u8vec4();
-				for(int col_cnt = 0; col_cnt != 6; ++col_cnt) {
-					carray.emplace_back(color);
-				}
 				coords.emplace_back(glm::vec2(x1, y2), glm::vec2(u1, v2));
 				coords.emplace_back(glm::vec2(x1, y1), glm::vec2(u1, v1));
 				coords.emplace_back(glm::vec2(x2, y1), glm::vec2(u2, v1));
@@ -325,15 +319,22 @@ namespace KRE
 			font_renderable->setWidth(width);
 			font_renderable->setHeight(height);
 			font_renderable->update(&coords);
-			font_renderable->updateColors(&carray);
+			font_renderable->setVerticesPerColor(6);
+			font_renderable->updateColors(colors);
 			return font_renderable;
 		}
 
 		long calculateCharAdvance(char32_t cp) override
 		{
-			int advance = 0;
-			stbtt_GetCodepointHMetrics(&font_handle_, cp, &advance, nullptr);
-			return static_cast<int>(advance * scale_ * 65536.0f);
+			//int advance = 0;
+			//int bearing = 0;
+			//stbtt_GetCodepointHMetrics(&font_handle_, cp, &advance, &bearing);
+			//return static_cast<int>(advance * scale_ * 65536.0f);
+			auto it = packed_char_.find(UnicodeRange(cp));
+			ASSERT_LOG(it != packed_char_.end(), "codepoint '" << cp << "' isn't in list of packed characters.");
+				
+			stbtt_packedchar *b = it->second.data() + cp - it->first.first;
+			return static_cast<int>(b->xadvance * 65536.0f);
 		}
 
 		void addGlyphsToTexture(const std::vector<char32_t>& codepoints) override

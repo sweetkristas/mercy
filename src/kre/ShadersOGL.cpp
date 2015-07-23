@@ -1032,6 +1032,141 @@ namespace KRE
 			get_current_active_shader() = object_;
 		}
 
+
+		void ShaderProgram::setAttributeValue(int aid, const int value) const 
+		{
+			auto it = v_attribs_.find(aid);
+			ASSERT_LOG(it != v_attribs_.end(), "Couldn't find location " << aid << " on the uniform list.");
+			const Actives& a = it->second;
+			switch(a.type) {
+				case GL_INT:
+				case GL_BOOL:
+				case GL_SAMPLER_2D:
+				case GL_SAMPLER_CUBE:	
+					glVertexAttribI1i(a.location, value); 
+					break;
+				case GL_FLOAT:
+					glVertexAttrib1f(a.location, static_cast<float>(value));
+					break;
+				default:
+					ASSERT_LOG(false, "Unhandled attribute type: " << it->second.type);
+			}
+		}
+
+		void ShaderProgram::setAttributeValue(int aid, const float value) const 
+		{
+			auto it = v_attribs_.find(aid);
+			ASSERT_LOG(it != v_attribs_.end(), "Couldn't find location " << aid << " on the uniform list.");
+			const Actives& a = it->second;
+			switch(a.type) {
+				case GL_INT:
+				case GL_BOOL:
+				case GL_SAMPLER_2D:
+				case GL_SAMPLER_CUBE:	
+					glVertexAttribI1i(a.location, static_cast<GLint>(value)); 
+					break;
+				case GL_FLOAT:
+					glVertexAttrib1f(a.location, value);
+					break;
+				default:
+					ASSERT_LOG(false, "Unhandled attribute type: " << it->second.type);
+			}
+		}
+
+		void ShaderProgram::setAttributeValue(int aid, const float* value) const 
+		{
+			if(aid == ShaderProgram::INVALID_ATTRIBUTE) {
+				LOG_WARN("Tried to set value for invalid attribute iterator.");
+				return;
+			}
+			auto it = v_attribs_.find(aid);
+			ASSERT_LOG(it != v_attribs_.end(), "Couldn't find location " << aid << " on the uniform list.");
+			const Actives& a = it->second;
+			ASSERT_LOG(value != nullptr, "setAttributeValue(): value is nullptr");
+			switch(a.type) {
+				case GL_FLOAT:
+					glVertexAttrib1fv(a.location, value);
+					break;
+				case GL_FLOAT_VEC2:
+					glVertexAttrib2fv(a.location, value);
+					break;
+				case GL_FLOAT_VEC3:
+					glVertexAttrib3fv(a.location, value);
+					break;
+				case GL_FLOAT_VEC4:
+					glVertexAttrib4fv(a.location, value);
+					break;
+				default:
+					ASSERT_LOG(false, "Unhandled uniform type: " << it->second.type);
+			}
+		}
+
+		void ShaderProgram::setAttributeValue(int aid, const int* value) const 
+		{
+			if(aid == ShaderProgram::INVALID_ATTRIBUTE) {
+				LOG_WARN("Tried to set value for invalid attribute iterator.");
+				return;
+			}
+			auto it = v_attribs_.find(aid);
+			ASSERT_LOG(it != v_attribs_.end(), "Couldn't find location " << aid << " on the uniform list.");
+			const Actives& a = it->second;
+			ASSERT_LOG(value != nullptr, "setAttributeValue(): value is nullptr");
+			switch(a.type) {
+				case GL_INT:
+				case GL_BOOL:
+				case GL_SAMPLER_2D:
+				case GL_SAMPLER_CUBE:	
+					glVertexAttribI1i(a.location, *value); 
+					break;
+				case GL_INT_VEC2:	
+				case GL_BOOL_VEC2:	
+					glVertexAttribI2i(a.location, value[0], value[1]); 
+					break;
+				case GL_INT_VEC3:	
+				case GL_BOOL_VEC3:	
+					glVertexAttribI3iv(a.location, value); 
+					break;
+				case GL_INT_VEC4: 	
+				case GL_BOOL_VEC4:
+					glVertexAttribI4iv(a.location, value); 
+					break;
+				case GL_FLOAT:
+					glVertexAttrib1f(a.location, static_cast<float>(*value));
+					break;
+				default:
+					ASSERT_LOG(false, "Unhandled uniform type: " << it->second.type);
+			}
+		}
+
+		void ShaderProgram::setAttributeValue(int aid, const unsigned char* value) const
+		{
+			if(aid == ShaderProgram::INVALID_ATTRIBUTE) {
+				LOG_WARN("Tried to set value for invalid attribute iterator.");
+				return;
+			}
+			auto it = v_attribs_.find(aid);
+			ASSERT_LOG(it != v_attribs_.end(), "Couldn't find location " << aid << " on the uniform list.");
+			const Actives& a = it->second;
+			ASSERT_LOG(value != nullptr, "setAttributeValue(): value is nullptr");
+			switch(a.type) {
+				case GL_FLOAT_VEC4:
+					glVertexAttrib4ubv(a.location, value);
+					break;
+				default:
+					ASSERT_LOG(false, "Unhandled uniform type: " << it->second.type);
+			}
+		}
+
+		void ShaderProgram::setAttributeValue(int aid, const void* value) const 
+		{
+			ASSERT_LOG(false, "XXX todo: ShaderProgram::setAttributeValue");
+		}
+
+		void ShaderProgram::setAttributeFromVariant(int uid, const variant& value) const 
+		{
+			ASSERT_LOG(false, "XXX todo: ShaderProgram::setAttributeValue");
+		}
+
 		void ShaderProgram::setUniformValue(int uid, const void* value) const
 		{
 			if(uid == ShaderProgram::INVALID_UNIFORM) {
