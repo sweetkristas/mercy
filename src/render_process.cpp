@@ -43,15 +43,30 @@ namespace process
 
 		const pointf& cam = eng.get_camera();
 		const KRE::WindowPtr wnd = eng.getWindow();
-		const point screen_centre(eng.getGameArea().w() / 2, eng.getGameArea().h() / 2);
+		const point screen_centre(eng.getGameArea().mid_x(), eng.getGameArea().mid_y());
 		const mercy::BaseMapPtr& rmap = eng.getMap();
 		const pointf& ts = rmap->getTileSize();
-
+		pointf map_offset;
 		// draw map
 		// XXX fix this to rmap->getRenderable();
 		auto mapr = rmap->getRenderable();
 		// XXX need to set map position offset by camera.
 		//mapr->setPosition(rmap->getWidth() / 2 * ts.x + screen_centre.x - cam.x, rmap->getHeight() / 2 * ts.y + screen_centre.y - cam.y);
+		if(rmap->isFixedSize()) {
+			const float map_pixel_width = rmap->getWidth() * ts.x;
+			const float map_pixel_height = rmap->getHeight() * ts.y;
+			if(map_pixel_width > eng.getGameArea().w()) {
+				map_offset.x = 0; // XXX fixme
+			} else {
+				map_offset.x = (eng.getGameArea().w() - map_pixel_width) / 2.0f;
+			}
+			if(map_pixel_height > eng.getGameArea().h()) {
+				map_offset.y = 0; // XXX fixme
+			} else {
+				map_offset.y = (eng.getGameArea().h() - map_pixel_height) / 2.0f;
+			}
+			mapr->setPosition(map_offset.x, map_offset.y);
+		}
 		mapr->preRender(wnd);
 		wnd->render(mapr.get());
 
@@ -60,7 +75,7 @@ namespace process
 				auto& spr = e->spr;
 				auto& pos = e->pos;
 				ASSERT_LOG(spr->obj != nullptr, "No renderable object attached to sprite.");
-				spr->obj->setPosition(pos->pos.x * ts.x /*+ screen_centre.x - cam.x*/, pos->pos.y * ts.y /*+ screen_centre.y - cam.y*/);
+				spr->obj->setPosition(pos->pos.x * ts.x + screen_centre.x - cam.x + map_offset.x, pos->pos.y * ts.y + screen_centre.y - cam.y + map_offset.y);
 				spr->obj->preRender(wnd);
 				wnd->render(spr->obj.get());
 			}

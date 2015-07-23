@@ -476,8 +476,8 @@ int main(int argc, char* argv[])
 	// XX move device metrics into KRE DisplayDevice.
 	DeviceMetrics dm;
 
-	const int map_width = 125;
-	const int map_height = 45;
+	const int map_width = 100;
+	const int map_height = 40;
 	variant_builder features;
 	features.add("dpi_x", dm.getDpiX());
 	features.add("dpi_y", dm.getDpiY());

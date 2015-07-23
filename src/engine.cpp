@@ -242,13 +242,13 @@ void engine::set_camera(const point& cam)
 			const float map_pixel_width = map_->getWidth() * map_->getTileSize().x;
 			const float map_pixel_height = map_->getHeight() * map_->getTileSize().y;
 			if(map_pixel_width > getGameArea().w()) {
-				if(camera_.x < (map_pixel_width - getGameArea().w())) {
-					camera_.x = getGameArea().w() / 2;
-				} else if(map_pixel_width - camera_.x > (map_pixel_width - getGameArea().w())) {
-					camera_.x = map_pixel_width - getGameArea().w() / 2;
-				}
+				// XXX fixme
 			} else {
 				camera_.x = getGameArea().mid_x();
+			}
+			if(map_pixel_height > getGameArea().h()) {
+				// XXX fixme
+			} else {
 				camera_.y = getGameArea().mid_y();
 			}
 		}
