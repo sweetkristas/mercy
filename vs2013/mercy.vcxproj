@@ -140,6 +140,7 @@
     <ClInclude Include="..\src\variant.hpp" />
     <ClInclude Include="..\src\variant_utils.hpp" />
     <ClInclude Include="..\src\visibility.hpp" />
+    <ClInclude Include="..\src\visibility_fwd.hpp" />
     <ClInclude Include="..\src\VoronoiDiagramGenerator.h" />
     <ClInclude Include="..\src\xhtml\css_lexer.hpp" />
     <ClInclude Include="..\src\xhtml\css_parser.hpp" />

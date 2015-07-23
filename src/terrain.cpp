@@ -34,7 +34,7 @@
 
 #include "FontDriver.hpp"
 
-extern KRE::SceneObjectPtr text_block_renderer(const std::vector<std::string>& strs, const std::vector<KRE::Color>& colors, float* ts_x, float* ts_y);
+extern KRE::ColoredFontRenderablePtr text_block_renderer(const std::vector<std::string>& strs, const std::vector<KRE::Color>& colors, float* ts_x, float* ts_y);
 
 namespace terrain
 {

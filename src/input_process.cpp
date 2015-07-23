@@ -70,6 +70,8 @@ namespace process
 						inp->action = component::input::Action::moved;
 					} else if(key == SDL_SCANCODE_PERIOD) {
 						inp->action = component::input::Action::pass;
+					} else if(key == SDL_SCANCODE_1) {
+						inp->action = component::input::Action::spell;						
 					}
 				}
 			}

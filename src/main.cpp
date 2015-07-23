@@ -260,7 +260,46 @@ private:
 	int dpi_y_;
 };
 
-void create_player(engine& e)
+// XXX convert this to a helper class
+KRE::ColoredFontRenderablePtr text_block_renderer(const std::vector<std::string>& strs, const std::vector<KRE::Color>& colors, float* ts_x, float* ts_y)
+{
+	static std::vector<std::string> ff;
+	if(ff.empty()) {
+		ff.emplace_back("SourceCodePro-Regular");
+		ff.emplace_back("square");
+		ff.emplace_back("whitrabt");
+		ff.emplace_back("monospace");
+	}
+
+	static DeviceMetrics dm;
+	
+	static const int font_size = 16;
+	static const float fs = static_cast<float>(font_size * dm.getDpiY()) / 72.0f;
+	static auto fh = KRE::FontDriver::getFontHandle(ff, fs);
+	int y = static_cast<int>(fh->getScaleFactor() * fs);
+
+	if(ts_x != nullptr) {
+		*ts_x = static_cast<float>(fh->calculateCharAdvance('M') / 65536.0f);
+	}
+	if(ts_y != nullptr) {
+		*ts_y = fs;
+	}
+
+	std::vector<point> final_path;
+	std::string concat_op;
+	for(auto& op : strs) {
+		auto glyph_path = fh->getGlyphPath(op);
+		for(auto it = glyph_path.begin(); it != glyph_path.end()-1; ++it) {
+			auto& gp = *it;
+			final_path.emplace_back(gp.x, gp.y + y);
+		}
+		concat_op += op;
+		y += static_cast<int>(fh->getScaleFactor() * fs);
+	}
+	return fh->createColoredRenderableFromPath(nullptr, concat_op, final_path, colors);
+}
+
+void create_player(engine& e, int dpi_x, int dpi_y)
 {
 	ASSERT_LOG(e.getMap() != nullptr, "Please add map before creating player.");
 	auto& map = e.getMap();
@@ -285,17 +324,23 @@ void create_player(engine& e)
 	//auto surf = std::make_shared<graphics::surface>(font::render_shaded("@", fnt, graphics::color(255,255,255), graphics::color(255,0,0)));
 	//auto surf = std::make_shared<graphics::surface>("images/spritely_fellow.png");
 	// XX codify this better.
-	std::vector<std::string> ff;
-	ff.emplace_back("SourceCodePro-Regular");
-	const int font_size = 10;
-	const float fs = static_cast<float>(font_size * 144.0f) / 72.0f;
-	auto fh = KRE::FontDriver::getFontHandle(ff, fs);
-	auto glyph_path = fh->getGlyphPath("@");
-	auto spr = fh->createRenderableFromPath(nullptr, "@", glyph_path);
+	//std::vector<std::string> ff;
+	//ff.emplace_back("SourceCodePro-Regular");
+	//const int font_size = 20;
+	//const float fs = static_cast<float>(font_size * dpi_y) / 72.0f;
+	//auto fh = KRE::FontDriver::getFontHandle(ff, fs);
+	//auto glyph_path = fh->getGlyphPath("@");
+	//auto spr = fh->createRenderableFromPath(nullptr, "@", glyph_path);
+	//spr->setColor(KRE::Color::colorWhite());
+
+	std::vector<std::string> strs;
+	strs.emplace_back("@");
+	std::vector<KRE::Color> colors(1, KRE::Color::colorWhite());
+	auto spr = text_block_renderer(strs, colors, nullptr, nullptr);
+
 	player->spr = std::make_shared<component::sprite>(spr);
 	e.add_entity(player);
 	
-	spr->setPosition(map->getStartLocation().x * map->getTileSize().x, map->getStartLocation().y * map->getTileSize().y);
 	map->updatePlayerVisibility(player->pos->pos, player->stat->visible_radius);
 }
 
@@ -351,45 +396,6 @@ public:
 private:
 	std::shared_ptr<KRE::Attribute<KRE::vertex_color>> attribs_;
 };
-
-// XXX convert this to a helper class
-KRE::SceneObjectPtr text_block_renderer(const std::vector<std::string>& strs, const std::vector<KRE::Color>& colors, float* ts_x, float* ts_y)
-{
-	static std::vector<std::string> ff;
-	if(ff.empty()) {
-		ff.emplace_back("SourceCodePro-Regular");
-		ff.emplace_back("square");
-		ff.emplace_back("whitrabt");
-		ff.emplace_back("monospace");
-	}
-
-	static DeviceMetrics dm;
-	
-	static const int font_size = 10;
-	static const float fs = static_cast<float>(font_size * dm.getDpiY()) / 72.0f;
-	static auto fh = KRE::FontDriver::getFontHandle(ff, fs);
-	int y = static_cast<int>(fh->getScaleFactor() * fs);
-
-	if(ts_x != nullptr) {
-		*ts_x = static_cast<float>(fh->calculateCharAdvance('x') / 65536.0f);
-	}
-	if(ts_y != nullptr) {
-		*ts_y = fs;
-	}
-
-	std::vector<point> final_path;
-	std::string concat_op;
-	for(auto& op : strs) {
-		auto glyph_path = fh->getGlyphPath(op);
-		for(auto it = glyph_path.begin(); it != glyph_path.end()-1; ++it) {
-			auto& gp = *it;
-			final_path.emplace_back(gp.x, gp.y + y);
-		}
-		concat_op += op;
-		y += static_cast<int>(fh->getScaleFactor() * fs);
-	}
-	return fh->createColoredRenderableFromPath(nullptr, concat_op, final_path, colors);
-}
 
 int main(int argc, char* argv[])
 {
@@ -477,18 +483,18 @@ int main(int argc, char* argv[])
 	features.add("dpi_y", dm.getDpiY());
 	eng->setMap(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
 
-	create_player(*eng);
+	create_player(*eng, dm.getDpiX(), dm.getDpiY());
 
 	//auto cave_test = mercy::cave_fixed_param(80, 50);
 	//for(auto& line : cave_test) {
 	//	std::cout << "    " << line << "\n";
 	//}
 
-	terrain::terrain terra_firma;
+	/*terrain::terrain terra_firma;
 	auto chks = terra_firma.get_chunks_in_area(rect(0, 0, 80, 50));
 	for(auto& chk : chks) {
 		root->attachObject(chk->get_renderable());
-	}
+	}*/
 
 	SDL_Event e;
 	bool running = true;
