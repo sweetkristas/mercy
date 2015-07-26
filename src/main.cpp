@@ -58,6 +58,7 @@
 #include "cave.hpp"
 #include "collision_process.hpp"
 #include "component.hpp"
+#include "creature.hpp"
 #include "input_process.hpp"
 #include "json.hpp"
 #include "map.hpp"
@@ -426,6 +427,7 @@ int main(int argc, char* argv[])
 	FontDriver::setFontProvider("stb");
 
 	terrain::terrain::load_terrain_data(json::parse_from_file("../data/terrain.cfg"));
+	creature::loader(json::parse_from_file("../data/creatures.cfg"));
 
 	WindowManager wm("SDL");
 
@@ -484,6 +486,8 @@ int main(int argc, char* argv[])
 	eng->setMap(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
 
 	create_player(*eng, dm.getDpiX(), dm.getDpiY());
+	
+	eng->add_entity(creature::spawn("gnarled_goblin", eng->getMap()->getStartLocation()-point(1, 1)));
 
 	//auto cave_test = mercy::cave_fixed_param(80, 50);
 	//for(auto& line : cave_test) {

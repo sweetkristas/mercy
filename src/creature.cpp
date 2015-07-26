@@ -23,9 +23,13 @@
 
 #include <map>
 
+#include "FontDriver.hpp"
+
 #include "component.hpp"
 #include "creature.hpp"
 #include "random.hpp"
+
+extern KRE::ColoredFontRenderablePtr text_block_renderer(const std::vector<std::string>& strs, const std::vector<KRE::Color>& colors, float* ts_x, float* ts_y);
 
 namespace creature
 {
@@ -43,9 +47,11 @@ namespace creature
 				  armour_(0),
 				  visible_radius_(5),
 				  ai_name_(),
-				  sprite_name_(),
-				  sprite_area_(),
-				  component_mask_(0) 
+				  //sprite_name_(),
+				  //sprite_area_(),
+				  component_mask_(0),
+				  symbol_(),
+				  color_()
 			{
 				using namespace component;
 				ASSERT_LOG(n.is_map(), "Creature definitions must be maps");
@@ -100,7 +106,7 @@ namespace creature
 				}
 
 				if((component_mask_ & genmask(Component::SPRITE)) == genmask(Component::SPRITE)) {
-					ASSERT_LOG(n.has_key("sprite"), "No 'sprite' attribute found for creature " << name_);
+					/*ASSERT_LOG(n.has_key("sprite"), "No 'sprite' attribute found for creature " << name_);
 					sprite_name_ = n["sprite"].as_string();
 					if(n.has_key("area")) {
 						ASSERT_LOG(n["area"].is_list() && n["area"].num_elements() == 4, "'area' attribute for creature " << name_ << " must be list of four integers (x1,y1,x2,y2). " << n["area"].type_as_string());
@@ -108,6 +114,11 @@ namespace creature
 							n["area"][1].as_int32(),
 							n["area"][2].as_int32(),
 							n["area"][3].as_int32());
+					}*/
+					ASSERT_LOG(n.has_key("symbol"), "No 'symbol' attribute found in creature definition '" << name_);
+					symbol_ = n["symbol"].as_string();
+					if(n.has_key("color")) {
+						color_ = KRE::Color(n["color"]);
 					}
 				}
 			}
@@ -128,9 +139,11 @@ namespace creature
 					res->pos = std::make_shared<position>(pos);
 				}
 				if((component_mask_ & genmask(Component::SPRITE)) == genmask(Component::SPRITE)) {
-					// The whole sprite mess needs fixed, since it doesn't take an area.
-					// XXX fixme
-					///res->spr = std::make_shared<sprite>(sprite_name_, sprite_area_);
+					std::vector<std::string> strs;
+					std::vector<KRE::Color> colors(1, color_);
+					strs.emplace_back(symbol_);
+					auto spr = text_block_renderer(strs, colors, nullptr, nullptr);
+					res->spr = std::make_shared<sprite>(spr);
 				}
 				if((component_mask_ & genmask(Component::AI)) == genmask(Component::AI)) {
 					res->aip = std::make_shared<ai>();
@@ -160,9 +173,11 @@ namespace creature
 			// what items might be carried.
 			// lights
 			std::string ai_name_;
-			std::string sprite_name_;
-			rect sprite_area_;
+			//std::string sprite_name_;
+			//rect sprite_area_;
 			component_id component_mask_;
+			std::string symbol_;
+			KRE::Color color_;
 			creature() = delete;
 		};
 		typedef std::shared_ptr<creature> creature_ptr;

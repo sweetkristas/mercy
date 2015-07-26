@@ -24,6 +24,7 @@
 #pragma once
 
 #include <memory>
+#include <set>
 
 #include "SceneFwd.hpp"
 #include "variant.hpp"
@@ -48,7 +49,6 @@ namespace mercy
 
 		virtual void clearVisible() = 0;
 		virtual bool blocksLight(int x, int y) const = 0;
-		virtual void setVisible(int x, int y) = 0;
 		virtual int getDistance(int x, int y) const = 0;
 		
 		virtual bool isWalkable(int x, int y) const = 0;
@@ -56,14 +56,19 @@ namespace mercy
 		virtual bool isFixedSize() const = 0;
 
 		void updatePlayerVisibility(const point& pos, int visible_radius);
+		const std::set<point>& getPlayerVisibleTiles() const { return player_visible_tiles_; }
+		std::set<point> getVisibleTilesAt(const point& pos, int visible_radius);
+		std::set<point> getVisibleTilesAt(int x, int y, int visible_radius);
 
 		virtual const point& getStartLocation() const = 0;
 	protected:
 		void setTileSize(float x, float y) { tile_size_.x = x; tile_size_.y = y; }
 	private:
+		virtual void handleSetVisible(int x, int y) = 0;
 		int width_;
 		int height_;
 		pointf tile_size_;
 		VisibilityPtr visibility_;
+		std::set<point> player_visible_tiles_;
 	};
 }

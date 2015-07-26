@@ -376,6 +376,10 @@ namespace json
 				variant token_value;
 				std::tie(tok, token_value) = lex.get_next_token();
 				variant key;
+				if(tok == lexer::RIGHT_BRACE) {
+					running = false;
+					break;
+				} 
 				if(tok == lexer::LITERAL || tok == lexer::STRING_LITERAL) {
 					key = token_value;
 				} else {

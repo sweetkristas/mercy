@@ -196,6 +196,15 @@ entity_list engine::entities_in_area(const rect& r)
 
 bool engine::update(float time)
 {
+	/*
+		float lag += time;
+		process_events();
+		while(lag >= MS_PER_UPDATE) {
+			// update game state
+			lag -= MS_PER_UPDATE;
+		}
+		render();
+	*/
 	process_events();
 	if(state_ == EngineState::PAUSE || state_ == EngineState::QUIT) {
 		return state_ == EngineState::PAUSE ? true : false;
@@ -241,15 +250,11 @@ void engine::set_camera(const point& cam)
 		if(map_->isFixedSize()) {
 			const float map_pixel_width = map_->getWidth() * map_->getTileSize().x;
 			const float map_pixel_height = map_->getHeight() * map_->getTileSize().y;
-			if(map_pixel_width > getGameArea().w()) {
-				// XXX fixme
-			} else {
-				camera_.x = getGameArea().mid_x();
+			if(map_pixel_width <= getGameArea().w()) {
+				camera_.x = static_cast<float>(getGameArea().mid_x());
 			}
-			if(map_pixel_height > getGameArea().h()) {
-				// XXX fixme
-			} else {
-				camera_.y = getGameArea().mid_y();
+			if(map_pixel_height <= getGameArea().h()) {
+				camera_.y = static_cast<float>(getGameArea().mid_y());
 			}
 		}
 	}

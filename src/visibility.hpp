@@ -13,7 +13,7 @@ class Visibility
 {
 public:
 	virtual ~Visibility() {}
-	virtual void Compute(const point& origin, int rangeLimit) = 0;
+	virtual void Compute(const point& origin, int rangeLimit, std::function<void(int, int)> set_visible) = 0;
 private:
 };
 
@@ -29,18 +29,17 @@ public:
   /// <param name="getDistance">A function that takes the X and Y coordinate of a point where X >= 0,
   /// Y >= 0, and X >= Y, and returns the distance from the point to the origin (0,0).
   /// </param>
-	AMVisibility(std::function<bool(int, int)> blocks_light, std::function<void(int, int)> set_visible, std::function<int(int, int)> get_distance)
+	AMVisibility(std::function<bool(int, int)> blocks_light, std::function<int(int, int)> get_distance)
 	{
 		blocks_light_ = blocks_light;
 		get_distance_  = get_distance;
-		set_visible_ = set_visible;
 	}
 
-	void Compute(const point& origin, int range_limit) override
+	void Compute(const point& origin, int range_limit, std::function<void(int, int)> set_visible) override
 	{
-		set_visible_(origin.x, origin.y);
+		set_visible(origin.x, origin.y);
 		for(int octant = 0; octant != 8; octant++) {
-			Compute(octant, origin, range_limit, 1, Slope(1, 1), Slope(0, 1));
+			Compute(octant, origin, range_limit, 1, Slope(1, 1), Slope(0, 1), set_visible);
 		}
 	}
 
@@ -55,7 +54,7 @@ private:
 		int x, y;
 	};
 
-	void Compute(int octant, const point& origin, int range_limit, int x, const Slope& ts, const Slope& bs)
+	void Compute(int octant, const point& origin, int range_limit, int x, const Slope& ts, const Slope& bs, std::function<void(int, int)> set_visible)
 	{
 		Slope top = ts;
 		Slope bottom = bs;
@@ -167,7 +166,7 @@ private:
 					// the "isOpaque ||" part and see NOTE comments further down
 					// bool isVisible = isOpaque || ((y != topY || top.GreaterOrEqual(y, x)) && (y != bottomY || bottom.LessOrEqual(y, x)));
 					if(is_visible) {
-						setVisible(x, y, octant, origin);
+						setVisible(x, y, octant, origin, set_visible);
 					}
 
 					// if we found a transition from clear to opaque or vice versa, adjust the top and bottom vectors
@@ -190,7 +189,7 @@ private:
 										bottom = Slope(ny, nx); 
 										break; // don't recurse unless necessary
 									} else { 
-										Compute(octant, origin, range_limit, x+1, top, Slope(ny, nx));
+										Compute(octant, origin, range_limit, x+1, top, Slope(ny, nx), set_visible);
 									}
 								} else { 
 									// the new bottom is greater than or equal to the top, so the new sector is empty and we'll ignore
@@ -253,7 +252,7 @@ private:
 		return blocks_light_(nx, ny);
 	}
 
-	void setVisible(int x, int y, int octant, const point& origin)
+	void setVisible(int x, int y, int octant, const point& origin, std::function<void(int, int)> set_visible)
 	{
 		int nx = origin.x, ny = origin.y;
 		switch(octant) {
@@ -266,11 +265,10 @@ private:
 			case 6: nx += y; ny += x; break;
 			case 7: nx += x; ny += y; break;
 		}
-		set_visible_(nx, ny);
+		set_visible(nx, ny);
 	}
 
   std::function<bool(int, int)> blocks_light_;
-  std::function<void(int, int)> set_visible_;
   std::function<int(int, int)> get_distance_;
 };
 
@@ -286,18 +284,17 @@ public:
 	/// <param name="getDistance">A function that takes the X and Y coordinate of a point where X >= 0,
 	/// Y >= 0, and X >= Y, and returns the distance from the point to the origin.
 	/// </param>
-	ShadowCastVisibility(std::function<bool(int, int)> blocks_light, std::function<void(int, int)> set_visible, std::function<int(int, int)> get_distance)
+	ShadowCastVisibility(std::function<bool(int, int)> blocks_light, std::function<int(int, int)> get_distance)
 	{
 		blocks_light_ = blocks_light;
 		get_distance_  = get_distance;
-		set_visible_ = set_visible;
 	}
 
-	void Compute(const point& origin, int rangeLimit) override
+	void Compute(const point& origin, int rangeLimit, std::function<void(int, int)> set_visible) override
 	{
-		set_visible_(origin.x, origin.y);
+		set_visible(origin.x, origin.y);
 		for(int octant = 0; octant < 8; octant++) {
-			Compute(octant, origin, rangeLimit, 1, Slope(1, 1), Slope(0, 1));
+			Compute(octant, origin, rangeLimit, 1, Slope(1, 1), Slope(0, 1), set_visible);
 		}
 	}
 
@@ -308,7 +305,7 @@ private:
 		int y, x;
 	};
 
-	void Compute(int octant, const point& origin, int rangeLimit, int x, Slope top, Slope bottom)
+	void Compute(int octant, const point& origin, int rangeLimit, int x, Slope top, Slope bottom, std::function<void(int, int)> set_visible)
 	{
 		for(; x <= rangeLimit; x++) {// rangeLimit < 0 || x <= rangeLimit
 			// compute the Y coordinates where the top vector leaves the column (on the right) and where the bottom vector
@@ -334,11 +331,11 @@ private:
 
 				bool in_range = rangeLimit < 0 || get_distance_(x, y) <= rangeLimit;
 				if(in_range) {
-					set_visible_(tx, ty);
+					set_visible(tx, ty);
 				}
 				// NOTE: use the next line instead if you want the algorithm to be symmetrical
 				if(in_range && (y != top_y || top.y * x >= top.x * y) && (y != bottom_y || bottom.y * x <= bottom.x * y)) {
-					set_visible_(tx, ty);
+					set_visible(tx, ty);
 				}
 
 				bool isOpaque = !in_range || blocks_light_(tx, ty);
@@ -352,7 +349,7 @@ private:
 							bottom = newBottom; 
 							break; 
 						} else {
-							Compute(octant, origin, rangeLimit, x+1, top, newBottom);
+							Compute(octant, origin, rangeLimit, x+1, top, newBottom, set_visible);
 						}
 					}
 					wasOpaque = 1;
@@ -371,6 +368,5 @@ private:
 	}
 
 	std::function<bool(int, int)> blocks_light_;
-	std::function<void(int, int)> set_visible_;
 	std::function<int(int, int)> get_distance_;
 };

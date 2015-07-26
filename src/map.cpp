@@ -434,7 +434,7 @@ namespace mercy
 					}
 				}
 			}
-			void setVisible(int x, int y) override
+			void handleSetVisible(int x, int y) override
 			{
 				if(x < 0 || y < 0 || y >= static_cast<int>(tiles_.size()) || x >= static_cast<int>(tiles_[y].size())) {
 					return;
@@ -469,7 +469,7 @@ namespace mercy
 		private:
 			struct TileInfo {
 				// XXX: visibility should default to 0. Is 2 for testing.
-				TileInfo(DungeonTile t) : type(t), visibility(2) {}
+				TileInfo(DungeonTile t) : type(t), visibility(0) {}
 				DungeonTile type;
 				// XXX codify these with some constants.
 				// Visibility information.
@@ -490,10 +490,10 @@ namespace mercy
 		: width_(width),
 		  height_(height),
 		  tile_size_(0, 0),
-		  visibility_(nullptr)
+		  visibility_(nullptr),
+		  player_visible_tiles_()
 	{
 		visibility_ = std::make_shared<ShadowCastVisibility>(std::bind(&BaseMap::blocksLight, this, std::placeholders::_1, std::placeholders::_2),
-			std::bind(&BaseMap::setVisible, this, std::placeholders::_1, std::placeholders::_2),
 			std::bind(&BaseMap::getDistance, this, std::placeholders::_1, std::placeholders::_2));
 	}
 
@@ -513,6 +513,25 @@ namespace mercy
 
 	void BaseMap::updatePlayerVisibility(const point& pos, int visible_radius)
 	{
-		visibility_->Compute(pos, visible_radius);
+		std::set<point> visible_tiles;
+		visibility_->Compute(pos, visible_radius, [&visible_tiles, this](int x, int y) { 
+			visible_tiles.emplace(x, y);
+			handleSetVisible(x, y);
+		});
+		player_visible_tiles_ = visible_tiles;
+	}
+
+	std::set<point> BaseMap::getVisibleTilesAt(const point& pos, int visible_radius)
+	{
+		std::set<point> visible_tiles;
+		visibility_->Compute(pos, visible_radius, [&visible_tiles](int x, int y) { 
+			visible_tiles.emplace(x, y);
+		});
+		return visible_tiles;
+	}
+
+	std::set<point> BaseMap::getVisibleTilesAt(int x, int y, int visible_radius)
+	{
+		return getVisibleTilesAt(point(x, y), visible_radius);
 	}
 }
