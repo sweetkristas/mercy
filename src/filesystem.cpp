@@ -59,7 +59,7 @@ namespace sys
 		ASSERT_LOG(p.has_filename(), "No filename found in write_file path: " << name);
 
 		// Create any needed directories
-		create_directories(p);
+		create_directories(p.parent_path());
 
 		// Write the file.
 		std::ofstream file(name, std::ios_base::binary);

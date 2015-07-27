@@ -470,6 +470,7 @@ void variant::write_json(std::ostream& os, bool pretty, int indent) const
 		os << f_;
 		break;
 	case VARIANT_TYPE_STRING:
+		os << "\"";
 		for(auto it = s_.begin(); it != s_.end(); ++it) {
 			if(*it == '"') {
 				os << "\\\"";
@@ -487,45 +488,33 @@ void variant::write_json(std::ostream& os, bool pretty, int indent) const
 				os << "\\r";
 			} else if(*it == '\t') {
 				os << "\\t";
-			} else if(*it > 128) {
-				uint8_t value = uint8_t(*it);
-				uint16_t code_point = 0;
-				if(value & 0xe0) {
-					code_point = (value & 0x1f) << 12;
-					value = uint8_t(*it++);
-					code_point |= (value & 0x7f) << 6;
-					value = uint8_t(*it++);
-					code_point |= (value & 0x7f);
-				} else if(value & 0xc0) {
-					code_point = (value & 0x3f) << 6;
-					value = uint8_t(*it++);
-					code_point |= (value & 0x7f);
-				}
 			} else {
 				os << *it;
 			}
 		}
+		os << "\"";
 		break;
 	case VARIANT_TYPE_MAP:
-		os << pretty ? "{\n" + std::string(' ', indent) : "{";
+		os << (pretty ? "{\n" + std::string(indent, ' ') : "{");
 		for(auto pr = m_.begin(); pr != m_.end(); ++pr) {
 			if(pr != m_.begin()) {
-				os << pretty ? ",\n" + std::string(' ', indent) : ",";
+				os << (pretty ? ",\n" + std::string(indent, ' ') : ",");
 			}
 			pr->first.write_json(os, pretty, indent + 4);
-			os << pretty ? ": " : ":";
+			os << (pretty ? ": " : ":");
 			pr->second.write_json(os, pretty, indent + 4);
 		}
-		os << pretty ? "\n" + std::string(' ', indent) + "}" : "}";
+		os << (pretty ? "\n" + std::string(indent, ' ') + "}" : "}");
+		break;
 	case VARIANT_TYPE_LIST:
-		os << pretty ? "[\n" + std::string(' ', indent) : "[";
+		os << (pretty ? "[\n" + std::string(indent, ' ') : "[");
 		for(auto it = l_.begin(); it != l_.end(); ++it) {
 			if(it != l_.begin()) {
-				os << pretty ? ",\n" + std::string(' ', indent) : ",";
+				os << (pretty ? ",\n" + std::string(indent, ' ') : ",");
 			}
 			it->write_json(os, pretty, indent + 4);
 		}
-		os << pretty ? "\n" + std::string(' ', indent) + "]" : "]";
+		os << (pretty ? "\n" + std::string(indent, ' ') + "]" : "]");
 		break;
 	}
 }

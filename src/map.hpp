@@ -27,6 +27,7 @@
 #include <set>
 
 #include "SceneFwd.hpp"
+#include "engine_fwd.hpp"
 #include "variant.hpp"
 #include "visibility_fwd.hpp"
 
@@ -38,14 +39,16 @@ namespace mercy
 	class BaseMap
 	{
 	public:
+		explicit BaseMap(const variant& node);
 		explicit BaseMap(int width, int height);
 		virtual ~BaseMap();
 		int getWidth() const { return width_; }
 		int getHeight() const { return height_; }
-		static BaseMapPtr create(const std::string& type, int width, int height, const variant& features);
-		virtual KRE::SceneObjectPtr getRenderable() = 0;
-		virtual void generate() = 0;
+		virtual const std::vector<KRE::SceneObjectPtr>& getRenderable(const rect& r) const = 0;
+		virtual void generate(engine& eng) = 0;
 		const pointf& getTileSize() const { return tile_size_; }
+
+		virtual void update(engine& eng) {}
 
 		virtual void clearVisible() = 0;
 		virtual bool blocksLight(int x, int y) const = 0;
@@ -60,11 +63,17 @@ namespace mercy
 		std::set<point> getVisibleTilesAt(const point& pos, int visible_radius);
 		std::set<point> getVisibleTilesAt(int x, int y, int visible_radius);
 
+		variant write();
+
+		static BaseMapPtr create(const std::string& type, int width, int height, const variant& features);
+		static BaseMapPtr load(const variant& node, const variant& features);
+
 		virtual const point& getStartLocation() const = 0;
 	protected:
 		void setTileSize(float x, float y) { tile_size_.x = x; tile_size_.y = y; }
 	private:
 		virtual void handleSetVisible(int x, int y) = 0;
+		virtual variant handleWrite() = 0;
 		int width_;
 		int height_;
 		pointf tile_size_;

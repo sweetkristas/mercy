@@ -29,7 +29,8 @@ namespace generator
 {
 	std::mt19937& get_random_engine()
 	{
-		static std::mt19937 res{randutils::auto_seed_256()};
+		static auto seed = randutils::auto_seed_256();
+		static std::mt19937 res{seed};
 		return res;
 	}
 }

@@ -31,17 +31,14 @@
 #include "asserts.hpp"
 #include "component.hpp"
 #include "engine.hpp"
+#include "filesystem.hpp"
 #include "variant_utils.hpp"
 #include "profile_timer.hpp"
 
 namespace 
 {
-	const double mouse_event_scale_factor = 65535.0;
-}
-
-double get_mouse_scale_factor()
-{
-	return mouse_event_scale_factor;
+	// rate at which we do engine updates, 0.05 == 50ms == 20 times/second
+	const float engine_update_period = 0.05f;
 }
 
 engine::engine(const KRE::WindowPtr& wnd)
@@ -53,7 +50,9 @@ engine::engine(const KRE::WindowPtr& wnd)
 	  entity_quads_(0, rect(0,0,100,100)),
 	  process_list_(),
 	  map_(),
-	  game_area_(0, 0, wnd->width(), wnd->height())
+	  game_area_(0, 0, wnd->width(), wnd->height()),
+	  render_process_(nullptr),
+	  lag_(0.0f)
 {
 }
 
@@ -93,13 +92,13 @@ void engine::remove_process(process::process_ptr s)
 void engine::translate_mouse_coords(SDL_Event* evt)
 {
 	// transform the absolute mouse co-ordinates to a window-size independent quantity.
-	if(evt->type == SDL_MOUSEMOTION) {
+	/*if(evt->type == SDL_MOUSEMOTION) {
 		evt->motion.x = static_cast<Sint32>((evt->motion.x * mouse_event_scale_factor) / wnd_->width());
 		evt->motion.y = static_cast<Sint32>((evt->motion.y * mouse_event_scale_factor) / wnd_->height());
 	} else {
 		evt->button.x = static_cast<Sint32>((evt->button.x * mouse_event_scale_factor) / wnd_->width());
 		evt->button.y = static_cast<Sint32>((evt->button.y * mouse_event_scale_factor) / wnd_->height());
-	}
+	}*/
 }
 
 void engine::process_events()
@@ -146,6 +145,19 @@ void engine::process_events()
 						}
 						claimed = true;
 					}
+				} else if(evt.key.keysym.scancode == SDL_SCANCODE_S && (SDL_GetModState() & KMOD_CTRL) != 0) {
+					// Save current state to file.
+					variant_builder save_result;
+					save_result.add("map", getMap()->write());
+					for(auto& e : entity_list_) {
+						save_result.add("entities", write_component_set(e));
+					}
+					save_result.add("camera_position", camera_.x);
+					save_result.add("camera_position", camera_.y);
+					// XXX should we write random seed here?
+
+					sys::write_file("./save.cfg", save_result.build().write_json(true));
+					LOG_DEBUG("Saved game to save.cfg");
 				} else if(evt.key.keysym.scancode == SDL_SCANCODE_T) {
 					// XXX testcode
 					const int map_width = 125;
@@ -176,15 +188,14 @@ void engine::populate_quadtree()
 		= (1 << component::Component::POSITION)
 		| (1 << component::Component::SPRITE)
 		| (1 << component::Component::COLLISION);
-	static component_id collision_map_mask = collision_mask | (1 << component::Component::MAP);
 
-	/*for(auto& e : entity_list_) {
-		if((e->mask & collision_map_mask) == collision_mask) {
+	for(auto& e : entity_list_) {
+		if((e->mask & collision_mask) == collision_mask) {
 			auto& pos = e->pos->pos;
 			auto& spr = e->spr;
-			entity_quads_.insert(e, rect(pos.x, pos.y, tile_size_.x, tile_size_.y));
+			entity_quads_.insert(e, rect(pos.x, pos.y, getMap()->getTileSize().x, getMap()->getTileSize().y));
 		}
-	}*/
+	}
 }
 
 entity_list engine::entities_in_area(const rect& r)
@@ -196,24 +207,23 @@ entity_list engine::entities_in_area(const rect& r)
 
 bool engine::update(float time)
 {
-	/*
-		float lag += time;
-		process_events();
-		while(lag >= MS_PER_UPDATE) {
-			// update game state
-			lag -= MS_PER_UPDATE;
-		}
-		render();
-	*/
+	lag_ += time;
+
 	process_events();
 	if(state_ == EngineState::PAUSE || state_ == EngineState::QUIT) {
 		return state_ == EngineState::PAUSE ? true : false;
 	}
 
-	populate_quadtree();
-	for(auto& p : process_list_) {
-		p->update(*this, time, entity_list_);
+	while(lag_ >= engine_update_period) {
+		populate_quadtree();
+		for(auto& p : process_list_) {
+			p->update(*this, engine_update_period, entity_list_);
+		}
+		map_->update(*this);
+		lag_ -= engine_update_period;
 	}
+
+	render_process_->update(*this, lag_ / engine_update_period, entity_list_);
 
 	return true;
 }
@@ -258,4 +268,14 @@ void engine::set_camera(const point& cam)
 			}
 		}
 	}
+}
+
+const component_set_ptr& engine::getPlayer() const
+{
+	for(auto& e : entity_list_) {
+		if(e->is_player()) {
+			return e;
+		}
+	}
+	return nullptr;
 }

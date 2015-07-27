@@ -29,12 +29,13 @@
 #include "color.hpp"
 #include "variant.hpp"
 #include "geometry.hpp"
+#include "map.hpp"
 
 #include "SceneFwd.hpp"
 
 class engine;
 
-namespace terrain
+namespace mercy
 {
 	typedef unsigned TerrainType;
 
@@ -52,12 +53,15 @@ namespace terrain
 		const std::string& get_name() const { return name_; }
 		const std::string& get_symbol() const { return symbol_; }
 		const KRE::Color& get_color() const { return color_; }
+		void setWalkable(bool walkable=true) { is_walkable_ = walkable; }
+		bool isWalkable() const { return is_walkable_; }
 	private:
 		float threshold_;
 		TerrainType terrain_type_;
 		std::string name_;
 		std::string symbol_;
 		KRE::Color color_;
+		bool is_walkable_;
 	};
 	typedef std::shared_ptr<terrain_tile> terrain_tile_ptr;
 	inline bool operator<(const terrain_tile& lhs, const terrain_tile& rhs) { return lhs.get_threshold() < rhs.get_threshold(); }
@@ -85,11 +89,13 @@ namespace terrain
 	};
 	typedef std::shared_ptr<chunk> chunk_ptr;
 
-	class terrain
+	class Terrain : public BaseMap
 	{
 	public:
-		terrain();
-		//terrain(const variant& n);
+		// default new world
+		explicit Terrain(const variant& features);
+		// when loading from existing data.
+		explicit Terrain(const variant& node, const variant& features);
 
 		// Find all the chunks which are in the given area, including partials.
 		// Will generate chunks as needed for complete coverage.
@@ -97,14 +103,36 @@ namespace terrain
 
 		// Pos is the worldspace position.
 		chunk_ptr generate_terrain_chunk(const point& pos);
-		terrain_tile_ptr get_tile_at(const point& p);
+		terrain_tile_ptr getTileAt(const point& p);
+		// const version of function to get a tile, if pos isn't available in
+		// current chunks it will not spawn a new chunk.
+		terrain_tile_ptr getTileAt(const point& pos) const;
 
 		static void load_terrain_data(const variant& n);
 		static pointf get_terrain_size();
 		//variant write();
+
+		void update(engine& eng) override;
+
+		const std::vector<KRE::SceneObjectPtr>& getRenderable(const rect& r) const override;
+		void generate(engine& eng) override;
+		void clearVisible() override;
+		bool blocksLight(int x, int y) const override;
+		int getDistance(int x, int y) const override;
+		
+		bool isWalkable(int x, int y) const override;
+
+		bool isFixedSize() const override { return false; }
+		const point& getStartLocation() const override;
+
 	private:
+		void handleSetVisible(int x, int y) override;
+		variant handleWrite() override;
 		int chunk_size_w_;
 		int chunk_size_h_;
 		terrain_map_type chunks_;
+		int terrain_seed_;
+		point start_location_;
+		std::vector<KRE::SceneObjectPtr> renderable_;
 	};
 }

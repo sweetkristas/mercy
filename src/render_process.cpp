@@ -42,6 +42,8 @@ namespace process
 		using namespace component;
 		static component_id render_mask = genmask(Component::SPRITE) | genmask(Component::POSITION);
 
+		std::unique_ptr<KRE::ModelManager2D> mm;
+
 		pointf cam = eng.get_camera();
 		const KRE::WindowPtr wnd = eng.getWindow();
 		const point screen_centre(eng.getGameArea().mid_x(), eng.getGameArea().mid_y());
@@ -49,7 +51,14 @@ namespace process
 		const pointf& ts = rmap->getTileSize();
 		pointf map_offset;
 		// draw map
-		auto mapr = rmap->getRenderable();
+		const int screen_width_in_tiles = (eng.getGameArea().w() + ts.x - 1) / ts.x;
+		const int screen_height_in_tiles = (eng.getGameArea().h() + ts.y - 1) / ts.y;
+		rect area = rect::from_coordinates(-screen_width_in_tiles / 2 + cam.x / ts.x, 
+			-screen_height_in_tiles / 2 + cam.y / ts.y,
+			screen_width_in_tiles / 2 + cam.x / ts.x,
+			screen_height_in_tiles / 2 + cam.y / ts.y);
+
+		auto mapr = rmap->getRenderable(area);
 		if(rmap->isFixedSize()) {
 			const float map_pixel_width = rmap->getWidth() * ts.x;
 			const float map_pixel_height = rmap->getHeight() * ts.y;
@@ -75,10 +84,20 @@ namespace process
 			} else {
 				map_offset.y = screen_centre.y - map_pixel_height/ 2.0f;
 			}
-			mapr->setPosition(map_offset.x, map_offset.y);
+			for(auto& r : mapr) {
+				r->setPosition(map_offset.x, map_offset.y);
+			}
+		} else {
+			map_offset.x = screen_centre.x - cam.x;
+			map_offset.y = screen_centre.y - cam.y;
+
+			mm.reset(new KRE::ModelManager2D(map_offset.x, map_offset.y));
 		}
-		mapr->preRender(wnd);
-		wnd->render(mapr.get());
+		for(auto& r : mapr) {
+			r->preRender(wnd);
+			wnd->render(r.get());
+		}
+		mm.reset();
 
 		for(auto& e : elist) {
 			if((e->mask & render_mask) == render_mask) {

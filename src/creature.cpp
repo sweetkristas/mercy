@@ -123,7 +123,7 @@ namespace creature
 				}
 			}
 
-			component_set_ptr create_instance(const point& pos) {
+			component_set_ptr create_instance(const std::string& type, const point& pos) {
 				component_set_ptr res = std::make_shared<component::component_set>(80);
 				using namespace component;
 				// XXX fix zorder here.
@@ -134,6 +134,7 @@ namespace creature
 					res->stat->armour = armour_;
 					res->stat->name = name_;
 					res->stat->visible_radius = visible_radius_;
+					res->stat->id = type;
 				}
 				if((component_mask_ & genmask(Component::POSITION)) == genmask(Component::POSITION)) {
 					res->pos = std::make_shared<position>(pos);
@@ -201,6 +202,6 @@ namespace creature
 	{
 		auto it = get_creature_cache().find(type);
 		ASSERT_LOG(it != get_creature_cache().end(), "Couldn't find a definition for creature of type '" << type << "' in the cache.");
-		return it->second->create_instance(pos);
+		return it->second->create_instance(type, pos);
 	}
 }

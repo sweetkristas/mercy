@@ -137,7 +137,7 @@
 #if __cpp_constexpr >= 201304L
     #define RANDUTILS_GENERALIZED_CONSTEXPR constexpr
 #else
-    #define RANDUTILS_GENERALIZED_CONSTEXPR
+    #define RANDUTILS_GENERALIZED_CONSTEXPR const
 #endif
 
 
@@ -219,27 +219,15 @@ public:
     typedef IntRep result_type;
 
 private:
-#if defined(_MSC_VER) && _MSC_VER <= 1800
-    static const uint32_t INIT_A = 0x43b0d7e5;
-    static const uint32_t MULT_A = 0x931e8875;
+    static RANDUTILS_GENERALIZED_CONSTEXPR uint32_t INIT_A = 0x43b0d7e5;
+    static RANDUTILS_GENERALIZED_CONSTEXPR uint32_t MULT_A = 0x931e8875;
 
-    static const uint32_t INIT_B = 0x8b51f9dd;
-    static const uint32_t MULT_B = 0x58f38ded;
+    static RANDUTILS_GENERALIZED_CONSTEXPR uint32_t INIT_B = 0x8b51f9dd;
+    static RANDUTILS_GENERALIZED_CONSTEXPR uint32_t MULT_B = 0x58f38ded;
 
-    static const uint32_t MIX_MULT_L = 0xca01f9dd;
-    static const uint32_t MIX_MULT_R = 0x4973f715;
-    static const uint32_t XSHIFT = sizeof(IntRep)*8/2;
-#else
-    static constexpr uint32_t INIT_A = 0x43b0d7e5;
-    static constexpr uint32_t MULT_A = 0x931e8875;
-
-    static constexpr uint32_t INIT_B = 0x8b51f9dd;
-    static constexpr uint32_t MULT_B = 0x58f38ded;
-
-    static constexpr uint32_t MIX_MULT_L = 0xca01f9dd;
-    static constexpr uint32_t MIX_MULT_R = 0x4973f715;
-    static constexpr uint32_t XSHIFT = sizeof(IntRep)*8/2;
-#endif
+    static RANDUTILS_GENERALIZED_CONSTEXPR uint32_t MIX_MULT_L = 0xca01f9dd;
+    static RANDUTILS_GENERALIZED_CONSTEXPR uint32_t MIX_MULT_R = 0x4973f715;
+    static RANDUTILS_GENERALIZED_CONSTEXPR uint32_t XSHIFT = sizeof(IntRep)*8/2;
 
     RANDUTILS_GENERALIZED_CONSTEXPR
     static IntRep fast_exp(IntRep x, IntRep power)

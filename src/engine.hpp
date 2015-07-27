@@ -54,6 +54,7 @@ public:
 
 	void add_process(process::process_ptr s);
 	void remove_process(process::process_ptr s);
+	void setRenderProcess(process::process_ptr s) { render_process_ = s; }
 
 	void set_state(EngineState state) { state_ = state; }
 	EngineState get_state() const { return state_; }
@@ -74,6 +75,8 @@ public:
 	const rect& getGameArea() const { return game_area_; }
 
 	KRE::WindowPtr getWindow() const { return wnd_; }
+
+	const component_set_ptr& getPlayer() const;
 private:
 	void translate_mouse_coords(SDL_Event* evt);
 	void process_events();
@@ -87,4 +90,7 @@ private:
 	std::vector<process::process_ptr> process_list_;
 	mercy::BaseMapPtr map_;
 	rect game_area_;
+
+	process::process_ptr render_process_;
+	float lag_;
 };

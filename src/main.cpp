@@ -426,7 +426,7 @@ int main(int argc, char* argv[])
 	FontDriver::setAvailableFonts(font_files);
 	FontDriver::setFontProvider("stb");
 
-	terrain::terrain::load_terrain_data(json::parse_from_file("../data/terrain.cfg"));
+	mercy::Terrain::load_terrain_data(json::parse_from_file("../data/terrain.cfg"));
 	creature::loader(json::parse_from_file("../data/creatures.cfg"));
 
 	WindowManager wm("SDL");
@@ -473,7 +473,8 @@ int main(int argc, char* argv[])
 	// N.B. entity/map collision needs to come before entity/entity collision
 	eng->add_process(std::make_shared<process::em_collision>());
 	eng->add_process(std::make_shared<process::ee_collision>());
-	eng->add_process(std::make_shared<process::render>());
+	// Render process needs to be handled slightly differently.
+	eng->setRenderProcess(std::make_shared<process::render>());
 
 	// XX move device metrics into KRE DisplayDevice.
 	DeviceMetrics dm;
@@ -483,7 +484,9 @@ int main(int argc, char* argv[])
 	variant_builder features;
 	features.add("dpi_x", dm.getDpiX());
 	features.add("dpi_y", dm.getDpiY());
-	eng->setMap(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
+	//eng->setMap(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
+	eng->setMap(mercy::BaseMap::create("terrain", map_width, map_height, features.build()));
+	eng->getMap()->generate(*eng);
 
 	create_player(*eng, dm.getDpiX(), dm.getDpiY());
 	
@@ -500,16 +503,9 @@ int main(int argc, char* argv[])
 		root->attachObject(chk->get_renderable());
 	}*/
 
-	SDL_Event e;
 	bool running = true;
 	Uint32 last_tick_time = SDL_GetTicks();
 	while(running) {
-		SDL_PumpEvents();
-		int numevts = SDL_PeepEvents(&e, 1, SDL_PEEKEVENT, SDL_KEYDOWN, SDL_KEYUP);
-		if(numevts > 0) {
-			if(e.type == SDL_KEYDOWN && e.key.keysym.scancode == SDL_SCANCODE_P) {
-			}
-		}
 		/*while(SDL_PollEvent(&e)) {
 			// XXX we need to add some keyboard/mouse callback handling here for "doc".
 			if(e.type == SDL_KEYUP && e.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
@@ -544,7 +540,6 @@ int main(int argc, char* argv[])
 			}
 		}*/
 
-		//main_wnd->setClearColor(KRE::Color::colorWhite());
 		main_wnd->clear(ClearFlags::ALL);
 
 		if(doc) {

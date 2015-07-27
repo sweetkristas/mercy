@@ -39,11 +39,10 @@ namespace process
 	{
 		using namespace component;
 		static component_id collision_mask = genmask(Component::POSITION) | genmask(Component::COLLISION);
-		static component_id collision_map_mask = collision_mask | genmask(Component::MAP);
 		// O(n^2) collision testing is for the pro's :-/
 		// XXX Please make quad-tree or kd-tree for O(nlogn)
 		for(auto& e1 : elist) {
-			if((e1->mask & collision_map_mask) == collision_mask) {
+			if((e1->mask & collision_mask) == collision_mask) {
 				auto& e1pos = e1->pos;
 				// XXX replace elist_ below with a call to eng.entities_in_area(r)
 				// where r = active area for entities on map.

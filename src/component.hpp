@@ -47,8 +47,6 @@ namespace component
 		AI,
 		INPUT,
 		LIGHTS,
-		MAP,
-		GUI,
 		// tag only values must go at end.
 		PLAYER,
 		ENEMY,
@@ -58,6 +56,7 @@ namespace component
 	static_assert(static_cast<int>(Component::MAX_COMPONENTS) <= 64, "Maximum number of components must be less than 64. If you need more consider a vector<bool> solution.");
 
 	Component get_component_from_string(const std::string& s);
+	const std::string& get_string_from_component(Component t);
 
 	inline component_id operator<<(int value, const Component& rhs) 
 	{
@@ -98,12 +97,13 @@ namespace component
 
 	struct stats : public component
 	{
-		stats() : component(Component::STATS), health(1), attack(0), armour(0), visible_radius(5), name() {}
+		stats() : component(Component::STATS), health(1), attack(0), armour(0), visible_radius(5), name(), id() {}
 		int health;
 		int attack;
 		int armour;
 		int visible_radius;
 		std::string name;
+		std::string id;
 	};
 
 	struct ai : public component
@@ -164,4 +164,6 @@ namespace component
 	{
 		return lhs->zorder == rhs->zorder ? lhs.get() < rhs.get() : lhs->zorder < rhs->zorder;
 	}
+
+	variant write_component_set(component_set_ptr c);
 }

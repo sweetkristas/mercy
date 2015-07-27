@@ -21,40 +21,53 @@
 	   distribution.
 */
 
+#include <boost/bimap.hpp>
+
 #include "Texture.hpp"
 
 #include "asserts.hpp"
 #include "component.hpp"
+#include "variant_utils.hpp"
 
 namespace component
 {
+	namespace
+	{
+		typedef boost::bimap<Component, std::string> component_string_bimap;
+		typedef component_string_bimap::value_type mapped_component_string;
+
+		component_string_bimap& get_tile_map()
+		{
+			static component_string_bimap res;
+			// XXX load from file? hard-coded for present.
+			if(res.empty()) {
+				res.insert(mapped_component_string(Component::AI, "ai"));
+				res.insert(mapped_component_string(Component::COLLISION, "collision"));
+				res.insert(mapped_component_string(Component::ENEMY, "enemy"));
+				res.insert(mapped_component_string(Component::INPUT, "input"));
+				res.insert(mapped_component_string(Component::LIGHTS, "lights"));
+				res.insert(mapped_component_string(Component::PLAYER, "player"));
+				res.insert(mapped_component_string(Component::POSITION, "position"));
+				res.insert(mapped_component_string(Component::SPRITE, "sprite"));
+				res.insert(mapped_component_string(Component::STATS, "stats"));
+			}
+			return res;
+		}
+
+	}
+
+	const std::string& get_string_from_component(Component t)
+	{
+		auto it = get_tile_map().left.find(t);
+		ASSERT_LOG(it != get_tile_map().left.end(), "Unable to find a mapping for component of type " << static_cast<int>(t) << " to string.");
+		return it->get_right();
+	}
+
 	Component get_component_from_string(const std::string& s)
 	{
-		if(s == "position") {
-			return Component::POSITION;
-		} else if(s == "sprite") {
-			return Component::SPRITE;
-		} else if(s == "stats") {
-			return Component::STATS;
-		} else if(s == "ai") {
-			return Component::AI;
-		} else if(s == "input") {
-			return Component::INPUT;
-		} else if(s == "lights") {
-			return Component::LIGHTS;
-		} else if(s == "map") {
-			return Component::MAP;
-		} else if(s == "player") {
-			return Component::PLAYER;
-		} else if(s == "enemy") {
-			return Component::ENEMY;
-		} else if(s == "gui") {
-			return Component::GUI;
-		} else if(s == "collision") {
-			return Component::COLLISION;
-		}
-		ASSERT_LOG(false, "Unrecognised component string '" << s << "'");
-		return static_cast<Component>(0);
+		auto it = get_tile_map().right.find(s);
+		ASSERT_LOG(it != get_tile_map().right.end(), "Unable to find a mapping for string " << s << " to Component.");
+		return it->get_left();
 	}
 
 	lights::lights() 
@@ -64,5 +77,41 @@ namespace component
 
 	lights::~lights()
 	{
+	}
+
+	variant write_component_set(component_set_ptr c)
+	{
+		variant_builder res;
+		for(int n = 0; n != static_cast<int>(Component::MAX_COMPONENTS); ++n) {
+			if((genmask(static_cast<Component>(n)) & c->mask) != 0) {
+				res.add("components", get_string_from_component(static_cast<Component>(n)));
+			}
+		}
+		res.add("zorder", c->zorder);
+		if(c->pos != nullptr) {
+			res.add("position", c->pos->pos.x);
+			res.add("position", c->pos->pos.y);
+		}
+		if(c->spr != nullptr) {
+			// nothing need be done, we only have this for completeness.
+		}
+		if(c->stat != nullptr) {
+			variant_builder stats;
+			stats.add("health", c->stat->health);
+			stats.add("attack", c->stat->attack);
+			stats.add("armour", c->stat->armour);
+			stats.add("visible_radius", c->stat->visible_radius);
+			stats.add("name", c->stat->name);
+			stats.add("id", c->stat->id);
+			// XXX add more stats here as needed.
+			res.add("stats", stats.build());
+		}
+		if(c->aip != nullptr) {
+			res.add("ai", c->aip->type);
+		}
+		if(c->inp != nullptr) {
+			// nothing need be done, we only have this for completeness.
+		}
+		return res.build();
 	}
 }
