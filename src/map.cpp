@@ -96,8 +96,8 @@ namespace mercy
 				  tiles_(),
 				  dpi_x_(96),
 				  dpi_y_(96),
-				  renderable_(nullptr),
 				  start_location_(),
+				  renderable_(nullptr),
 				  renderable_list_()
 			{
 				if(features.has_key("dpi_x")) {
@@ -112,8 +112,8 @@ namespace mercy
 				  tiles_(),
 				  dpi_x_(96),
 				  dpi_y_(96),
-				  renderable_(nullptr),
 				  start_location_(),
+				  renderable_(nullptr),
 				  renderable_list_()				  
 			{
 				if(features.has_key("dpi_x")) {
@@ -157,9 +157,11 @@ namespace mercy
 			{
 				if(renderable_list_.empty()) {
 					recreate_renderable_ = false;
-					renderable_list_.emplace_back(createRenderable());
+					renderable_ = createRenderable();
+					renderable_list_.emplace_back(renderable_);
 				} else if(renderable_list_[0] == nullptr) {
-					renderable_list_[0] = createRenderable();
+					renderable_ = createRenderable();
+					renderable_list_[0] = renderable_;
 				} else if(recreate_renderable_) {
 					recreate_renderable_ = false;
 					updateColors();
@@ -212,6 +214,7 @@ namespace mercy
 						colors.emplace_back(color);
 					}
 				}
+				ASSERT_LOG(!renderable_list_.empty() && renderable_list_[0] != nullptr, "Nothing in renderable list.");
 				renderable_->updateColors(colors);
 			}
 			KRE::ColoredFontRenderablePtr createRenderable()
@@ -568,9 +571,9 @@ namespace mercy
 			std::vector<std::vector<TileInfo>> tiles_;
 			int dpi_x_;
 			int dpi_y_;
-			KRE::ColoredFontRenderablePtr renderable_;
 			bool recreate_renderable_ = false;
 			point start_location_;
+			KRE::ColoredFontRenderablePtr renderable_;
 			std::vector<KRE::SceneObjectPtr> renderable_list_;
 		};
 	}

@@ -484,8 +484,8 @@ int main(int argc, char* argv[])
 	variant_builder features;
 	features.add("dpi_x", dm.getDpiX());
 	features.add("dpi_y", dm.getDpiY());
-	//eng->setMap(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
-	eng->setMap(mercy::BaseMap::create("terrain", map_width, map_height, features.build()));
+	eng->setMap(mercy::BaseMap::create("dungeon", map_width, map_height, features.build()));
+	//eng->setMap(mercy::BaseMap::create("terrain", map_width, map_height, features.build()));
 	eng->getMap()->generate(*eng);
 
 	create_player(*eng, dm.getDpiX(), dm.getDpiY());
