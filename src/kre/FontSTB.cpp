@@ -331,8 +331,12 @@ namespace KRE
 			//stbtt_GetCodepointHMetrics(&font_handle_, cp, &advance, &bearing);
 			//return static_cast<int>(advance * scale_ * 65536.0f);
 			auto it = packed_char_.find(UnicodeRange(cp));
-			ASSERT_LOG(it != packed_char_.end(), "codepoint '" << cp << "' isn't in list of packed characters.");
-				
+			if(it == packed_char_.end()) {
+				int advance = 0;
+				int bearing = 0;
+				stbtt_GetCodepointHMetrics(&font_handle_, cp, &advance, &bearing);
+				return static_cast<int>(advance * scale_ * 65536.0f);
+			}		
 			stbtt_packedchar *b = it->second.data() + cp - it->first.first;
 			return static_cast<int>(b->xadvance * 65536.0f);
 		}

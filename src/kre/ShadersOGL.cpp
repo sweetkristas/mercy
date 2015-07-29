@@ -25,6 +25,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "asserts.hpp"
+#include "variant_utils.hpp"
 #include "AttributeSet.hpp"
 #include "DisplayDevice.hpp"
 #include "ShadersOGL.hpp"
@@ -346,7 +347,27 @@ namespace KRE
 				{"", ""},
 			};
 
+			// XXX There is a bug with AMD hardware where using glAttribute* functions on location 0 just
+			// doesn't work at all. Hence we need to fix the location to 1 using a layout attribute.
+			// But then this won't work unless ARB_explicit_attrib_location is available or we have OpenGL >= 3.1
+			// installed. Perhaps a more general solution is to use glBindAttribLocation to explicitly map the
+			// location?
+			const char* const font_shader_vs_layout = 
+				"#version 120\n"
+				"uniform mat4 u_mvp_matrix;\n"
+				"attribute vec2 a_position;\n"
+				"attribute vec2 a_texcoord;\n"
+				"layout (location = 1) in vec4 a_color;\n"
+				"varying vec2 v_texcoord;\n"
+				"varying vec4 v_color;\n"
+				"void main()\n"
+				"{\n"
+				"    v_texcoord = a_texcoord;\n"
+				"    v_color = a_color;\n"
+				"    gl_Position = u_mvp_matrix * vec4(a_position,0.0,1.0);\n"
+				"}\n";
 			const char* const font_shader_vs = 
+				"#version 120\n"
 				"uniform mat4 u_mvp_matrix;\n"
 				"attribute vec2 a_position;\n"
 				"attribute vec2 a_texcoord;\n"
@@ -638,7 +659,7 @@ namespace KRE
 				{ "vtc_shader", "vtc_vs", vtc_vs, "vtc_fs", vtc_fs, vtc_uniform_mapping, vtc_attribue_mapping },
 				{ "circle", "circle_vs", circle_vs, "circle_fs", circle_fs, circle_uniform_mapping, circle_attribue_mapping },
 				{ "point_shader", "point_shader_vs", point_shader_vs, "point_shader_fs", point_shader_fs, point_shader_uniform_mapping, point_shader_attribute_mapping },
-				{ "font_shader", "font_shader_vs", font_shader_vs, "font_shader_fs", font_shader_fs, font_shader_uniform_mapping, font_shader_attribute_mapping },
+				//{ "font_shader", "font_shader_vs", font_shader_vs, "font_shader_fs", font_shader_fs, font_shader_uniform_mapping, font_shader_attribute_mapping },
 				{ "blur7", "blur_vs", blur_vs, "blur7_fs", blur7_fs, blur_uniform_mapping, blur_attribute_mapping },
 				{ "overlay", "overlay_vs", overlay_vs, "overlay_fs", overlay_fs, overlay_uniform_mapping, overlay_attribute_mapping },
 				{ "filter_shader", "filter_vs", filter_vs, "filter_fs", filter_fs, filter_uniform_mapping, filter_attribute_mapping },
@@ -670,6 +691,38 @@ namespace KRE
 						}
 						spp->setActives();
 					}
+
+					// special case for font-shader to work around amd bug.
+					std::string font_shader_vertex_shader;
+					variant node;
+					if(GLEW_ARB_explicit_attrib_location) {
+						font_shader_vertex_shader = font_shader_vs_layout;
+					} else {
+						font_shader_vertex_shader = font_shader_vs;
+						variant_builder binds;
+						binds.add("a_position", 0);
+						binds.add("a_color", 2);
+						variant_builder resb;
+						resb.add("binds", binds.build());
+						node = resb.build();
+					}
+
+					auto spp = std::make_shared<OpenGL::ShaderProgram>("font_shader", 
+						ShaderDef("font_shader_vs", font_shader_vertex_shader),
+						ShaderDef("font_shader_fs", font_shader_fs),
+						node);
+					res["font_shader"] = spp;
+					auto um = font_shader_uniform_mapping;
+					while(strlen(um->alt_name) > 0) {
+						spp->setAlternateUniformName(um->name, um->alt_name);
+						++um;
+					}
+					auto am = font_shader_attribute_mapping;
+					while(strlen(am->alt_name) > 0) {
+						spp->setAlternateAttributeName(am->name, am->alt_name);
+						++am;
+					}
+					spp->setActives();
 				}
 				return res;
 			}
@@ -948,6 +1001,19 @@ namespace KRE
 			}
 			object_ = glCreateProgram();
 			ASSERT_LOG(object_ != 0, "Unable to create program object.");
+
+			// Pre-link hook to configure any fixed bound locations.
+			// has to occur before glLinkProgram to have any effect.
+			auto& v = getShaderVariant();
+			if(v.has_key("binds") && v["binds"].is_map()) {
+				for(auto& kv : v["binds"].as_map()) {
+					ASSERT_LOG(kv.first.is_string() && kv.second.is_int(), "Expected binds to be a map of { string : integer } data.");
+					const std::string attrib_str = kv.first.as_string();
+					const int location = kv.second.as_int32();
+					glBindAttribLocation(object_, location, attrib_str.c_str());
+				}
+			}
+
 			for(auto sp : shader_programs) {
 				glAttachShader(object_, sp.get());
 			}

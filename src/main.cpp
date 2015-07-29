@@ -325,19 +325,22 @@ void create_player(engine& e, int dpi_x, int dpi_y)
 	//auto surf = std::make_shared<graphics::surface>(font::render_shaded("@", fnt, graphics::color(255,255,255), graphics::color(255,0,0)));
 	//auto surf = std::make_shared<graphics::surface>("images/spritely_fellow.png");
 	// XX codify this better.
-	//std::vector<std::string> ff;
-	//ff.emplace_back("SourceCodePro-Regular");
-	//const int font_size = 20;
-	//const float fs = static_cast<float>(font_size * dpi_y) / 72.0f;
-	//auto fh = KRE::FontDriver::getFontHandle(ff, fs);
-	//auto glyph_path = fh->getGlyphPath("@");
-	//auto spr = fh->createRenderableFromPath(nullptr, "@", glyph_path);
-	//spr->setColor(KRE::Color::colorWhite());
+	std::vector<std::string> ff;
+	ff.emplace_back("SourceCodePro-Regular");
+	const int font_size = 16;
+	const float fs = static_cast<float>(font_size * dpi_y) / 72.0f;
+	auto fh = KRE::FontDriver::getFontHandle(ff, fs);
+	auto glyph_path = fh->getGlyphPath("@");
+	for(auto& pt : glyph_path) {
+		pt.y += static_cast<int>(fh->getScaleFactor() * fs);
+	}
+	auto spr = fh->createRenderableFromPath(nullptr, "@", glyph_path);
+	spr->setColor(KRE::Color::colorWhite());
 
-	std::vector<std::string> strs;
-	strs.emplace_back("@");
-	std::vector<KRE::Color> colors(1, KRE::Color::colorWhite());
-	auto spr = text_block_renderer(strs, colors, nullptr, nullptr);
+	//std::vector<std::string> strs;
+	//strs.emplace_back("@");
+	//std::vector<KRE::Color> colors(1, KRE::Color::colorWhite());
+	//auto spr = text_block_renderer(strs, colors, nullptr, nullptr);
 
 	player->spr = std::make_shared<component::sprite>(spr);
 	e.add_entity(player);

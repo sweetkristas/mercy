@@ -223,7 +223,8 @@ namespace KRE
 		int a_color_attr = shader->getAttribute("a_color");
 		shader->setUniformDrawFunction([u_ignore_alpha, a_color_attr](ShaderProgramPtr shader) {
 			shader->setUniformValue(u_ignore_alpha, 0);
-			shader->setAttributeValue(a_color_attr, glm::value_ptr(glm::u8vec4(255,255,255,255)));
+			glm::vec4 attr_color(1.0f);
+			shader->setAttributeValue(a_color_attr, glm::value_ptr(attr_color));
 		});				
 	}
 
