@@ -1,4 +1,5 @@
 from random import randint, random
+import noise
 
 # variables: block_vertical block_horizontal road_vertical road_horizontal
 # start: block_vertical
@@ -30,7 +31,7 @@ class Tree(object):
         self.data = None
 
 def recurse_tree(root, num_iterations, x, y, width, height):
-    if num_iterations == 0: return
+    if num_iterations == 0 or (width <= min_width and height <= min_height): return
     if root.data[0] == block_vertical and width > min_width:
         w = int(width * random())/2
         if w < min_width: w = min_width
@@ -65,7 +66,7 @@ def create_grid(root, output):
     y = root.data[2]
     w = root.data[3]
     h = root.data[4]
-    print "%d, %d, %d, %d %s" % (x, y, w, h, as_string(root.data[0]))
+    #print "%d, %d, %d, %d %s" % (x, y, w, h, as_string(root.data[0]))
     for m in range(y, y+h):
         for n in range(x, x+w):
             if root.data[0] == block_vertical:
@@ -91,8 +92,28 @@ def main(width, height, num_iterations=10):
     output = create_grid(root, output)
     #print_tree(root)
     return output
+
+ascii_noise_map = [(0.0,'~'), (0.1,'-'), (0.25,'.'), (0.6,'+'), (1.0,'^')]
     
+def noise_map(width, height):
+    ascii_noise_map.reverse()
+    output = []
+    for i in range(0, height):
+        output.append([])
+        for j in range(0, width):
+            nv = noise.snoise2(float(j) / width, float(i) / height)
+            outc = ' '
+            for np in ascii_noise_map:
+                if nv < np[0]: outc = np[1]
+            output[-1].append(outc)
+    return output
+
 if __name__ == '__main__':
-    res = main(120, 50, 4)
-    for row in res: 
+    #res = main(120, 50, 1000)
+    #for row in res: 
+    #    print ''.join(row)
+
+    res2 = noise_map(150, 1000)
+    for row in res2: 
         print ''.join(row)
+    
