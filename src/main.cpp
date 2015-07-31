@@ -65,6 +65,7 @@
 #include "random.hpp"
 #include "render_process.hpp"
 #include "terrain.hpp"
+#include "terrain2.hpp"
 #include "visibility.hpp"
 
 #if defined(_MSC_VER)
@@ -410,6 +411,8 @@ int main(int argc, char* argv[])
 
 	int width = 1600;
 	int height = 900;
+
+	//mercy::write_terrain_image("test1.png", 1024, 3);
 
 	using namespace KRE;
 	SDL::SDL_ptr manager(new SDL::SDL());

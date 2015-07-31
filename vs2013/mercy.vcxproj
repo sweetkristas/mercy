@@ -134,6 +134,7 @@
     <ClInclude Include="..\src\svg\svg_transform.hpp" />
     <ClInclude Include="..\src\svg\utils.hpp" />
     <ClInclude Include="..\src\terrain.hpp" />
+    <ClInclude Include="..\src\terrain2.hpp" />
     <ClInclude Include="..\src\unit_test.hpp" />
     <ClInclude Include="..\src\uri.hpp" />
     <ClInclude Include="..\src\utf8_to_codepoint.hpp" />
@@ -273,6 +274,7 @@
     <ClCompile Include="..\src\svg\svg_transform.cpp" />
     <ClCompile Include="..\src\svg\svg_utils.cpp" />
     <ClCompile Include="..\src\terrain.cpp" />
+    <ClCompile Include="..\src\terrain2.cpp" />
     <ClCompile Include="..\src\unit_test.cpp" />
     <ClCompile Include="..\src\variant.cpp" />
     <ClCompile Include="..\src\variant_utils.cpp" />

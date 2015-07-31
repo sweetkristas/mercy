@@ -519,6 +519,9 @@
     <ClInclude Include="..\src\visibility_fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\terrain2.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\kre\geometry.inl">
@@ -905,6 +908,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\terrain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\terrain2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
